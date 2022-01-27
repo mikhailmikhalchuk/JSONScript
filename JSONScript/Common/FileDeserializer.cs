@@ -18,7 +18,15 @@ namespace JSONScript.Common
             {
                 throw new FileNotFoundException("File not found.");
             }
-            FileMethodSettings deserialized = JsonSerializer.Deserialize<FileMethodSettings>(File.ReadAllText(filePath));
+            FileMethodSettings deserialized;
+            try
+            {
+                deserialized = JsonSerializer.Deserialize<FileMethodSettings>(File.ReadAllText(filePath));
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+            }
             if (deserialized.AccessModifier == null)
             {
                 throw new ArgumentException($"File \"{filePath}\" must specify a valid access modifier.");
@@ -72,7 +80,15 @@ namespace JSONScript.Common
             {
                 throw new FileNotFoundException("File not found.");
             }
-            FileClassSettings deserialized = JsonSerializer.Deserialize<FileClassSettings>(File.ReadAllText(filePath));
+            FileClassSettings deserialized;
+            try
+            {
+                deserialized = JsonSerializer.Deserialize<FileClassSettings>(File.ReadAllText(filePath));
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+            }
             if (deserialized.AccessModifier == null)
             {
                 throw new ArgumentException($"File \"{filePath}\" must specify a valid access modifier.");
@@ -113,7 +129,15 @@ namespace JSONScript.Common
             {
                 throw new FileNotFoundException("File not found.");
             }
-            FileNamespaceSettings deserialized = JsonSerializer.Deserialize<FileNamespaceSettings>(File.ReadAllText(filePath));
+            FileNamespaceSettings deserialized;
+            try
+            {
+                deserialized = JsonSerializer.Deserialize<FileNamespaceSettings>(File.ReadAllText(filePath));
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+            }
             if (deserialized.Namespace == null)
             {
                 throw new ArgumentException($"File \"{filePath}\" must specify a valid namespace to create.");
@@ -168,5 +192,11 @@ namespace JSONScript.Common
         public string EntryNamespace { get; set; }
 
         public string EntryMethod { get; set; }
+
+        public string AssemblyName { get; set; }
+
+        public bool SilentCompilation { get; set; }
+
+        public bool VisualizeOnError { get; set; }
     }
 }

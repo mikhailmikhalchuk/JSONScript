@@ -34,69 +34,77 @@ namespace JSONScript
             FileCompilerSettings compilerSettings = new FileCompilerSettings()
             {
                 EntryMethod = "Main",
-                EntryNamespace = "ExampleProject.Program"
+                EntryNamespace = "ExampleProject.Program",
+                AssemblyName = "ExampleAssembly",
+                SilentCompilation = false,
+                VisualizeOnError = true
             };
 
-            FileClassSettings classExample = new FileClassSettings()
-            {
-                AccessModifier = "none",
-                IsStatic = false,
-                Name = "Program",
-                Namespace = "ExampleProject",
-                Implements = new List<string>()
-                {
-                    "System",
-                    "System.Threading"
-                }
-            };
-
-            FileMethodSettings methodExample = new FileMethodSettings()
-            {
-                AccessModifier = "public",
-                Name = "Main",
-                Namespace = "ExampleProject.Program",
-                ReturnType = "System.Void",
-                IsStatic = false,
-                Code = "ExampleMethod(\"1\")"
-            };
-
-            FileMethodSettings methodExample2 = new FileMethodSettings()
-            {
-                AccessModifier = "private",
-                Name = "ExampleMethod",
-                Namespace = "ExampleProject.Program",
-                ReturnType = "System.Int32",
-                IsStatic = true,
-                ParameterTypes = new List<string>()
-                {
-                    "System.String"
-                },
-                ParameterNames = new List<string>()
-                {
-                    "exParam"
-                },
-                ParameterDefaultValues = new List<string>()
-                {
-                    "\"test\""
-                },
-                Code = "Console.WriteLine(\"Waiting 50 seconds...\");\nThread.Sleep(50000);\nreturn 3"
-            };
-
-            FileNamespaceSettings exampleNamespace = new FileNamespaceSettings()
-            {
-                Namespace = "ExampleProject",
-                Implements = new List<string>()
-                {
-                    "System",
-                    "System.Threading"
-                }
-            };
+            if (!compilerSettings.SilentCompilation)
+                Console.WriteLine("Starting compiler service.");
 
             if (!Directory.Exists(FilesDirectory))
             {
-                Directory.CreateDirectory(FilesDirectory);
+                Console.WriteLine("Main directory does not exist, creating...");
+                Directory.CreateDirectory(FilesDirectory + Path.DirectorySeparatorChar + "Compiler");
+                Console.WriteLine("Adding compilerSettings.json and example files...");
                 string serialized = JsonSerializer.Serialize(compilerSettings, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "compilerSettings.json", serialized);
+
+                FileClassSettings classExample = new FileClassSettings()
+                {
+                    AccessModifier = "none",
+                    IsStatic = false,
+                    Name = "Program",
+                    Namespace = "ExampleProject",
+                    Implements = new List<string>()
+                    {
+                        "System",
+                        "System.Threading"
+                    }
+                };
+
+                FileMethodSettings methodExample = new FileMethodSettings()
+                {
+                    AccessModifier = "public",
+                    Name = "Main",
+                    Namespace = "ExampleProject.Program",
+                    ReturnType = "System.Void",
+                    IsStatic = false,
+                    Code = "ExampleMethod(\"1\")"
+                };
+
+                FileMethodSettings methodExample2 = new FileMethodSettings()
+                {
+                    AccessModifier = "private",
+                    Name = "ExampleMethod",
+                    Namespace = "ExampleProject.Program",
+                    ReturnType = "System.Int32",
+                    IsStatic = true,
+                    ParameterTypes = new List<string>()
+                    {
+                        "System.String"
+                    },
+                    ParameterNames = new List<string>()
+                    {
+                        "exParam"
+                    },
+                    ParameterDefaultValues = new List<string>()
+                    {
+                        "\"test\""
+                    },
+                    Code = "Console.WriteLine(\"Waiting 50 seconds...\");\nThread.Sleep(50000);\nreturn 3"
+                };
+
+                FileNamespaceSettings exampleNamespace = new FileNamespaceSettings()
+                {
+                    Namespace = "ExampleProject",
+                    Implements = new List<string>()
+                    {
+                        "System",
+                        "System.Threading"
+                    }
+                };
 
                 serialized = JsonSerializer.Serialize(methodExample, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Method-Main.json", serialized);
@@ -110,6 +118,7 @@ namespace JSONScript
                 serialized = JsonSerializer.Serialize(classExample, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Class-Program.json", serialized);
 
+                Console.WriteLine("Done!");
                 Process.Start(FilesDirectory);
                 return;
             }
@@ -138,6 +147,8 @@ namespace JSONScript
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "compilerSettings.json", serializedSettings);
             }
 
+            if (!compilerSettings.SilentCompilation)
+                Console.WriteLine("Looking for JSON files.");
             foreach (var file in Directory.GetFiles(FilesDirectory))
             {
                 if (file.ToLower().Contains("method"))
@@ -186,6 +197,14 @@ namespace JSONScript
                 }
             }
 
+            if (!compilerSettings.SilentCompilation)
+            {
+                Console.WriteLine($"Found {AllClasses.Count} class{(AllClasses.Count != 1 ? "es" : "")}.");
+                Console.WriteLine($"Found {AllMethods.Count} method{(AllMethods.Count != 1 ? "s" : "")}.");
+                Console.WriteLine($"Found {AllNamespaces.Count} namespace{(AllNamespaces.Count != 1 ? "s" : "")}.");
+                Console.WriteLine("Assigning methods to classes...");
+            }
+
             int index = 0;
             foreach (FileClassSettings cls in AllClassesFromDeserialized)
             {
@@ -209,6 +228,9 @@ namespace JSONScript
                 }
             }
 
+            if (!compilerSettings.SilentCompilation)
+                Console.WriteLine("Adding classes to namespaces...");
+
             index = 0;
             foreach (CodeNamespace ns in AllNamespaces.ToList())
             {
@@ -227,6 +249,9 @@ namespace JSONScript
                 index++;
             }
 
+            if (!compilerSettings.SilentCompilation)
+                Console.WriteLine("Creating the compiler...");
+
             CodeCompileUnit compileUnit = new CodeCompileUnit();
             foreach (CodeNamespace ns in AllNamespaces)
             {
@@ -243,23 +268,41 @@ namespace JSONScript
             }
             CompilerParameters compilerParameters = new CompilerParameters(totalUsings.ToArray())
             {
-                GenerateInMemory = true
+                GenerateInMemory = true,
+                OutputAssembly = compilerSettings.AssemblyName,
+                TempFiles = new TempFileCollection(FilesDirectory + Path.DirectorySeparatorChar + "Compiler")
             };
 
-            CodeGeneratorOptions optsy = new CodeGeneratorOptions();
-
-            StringWriter textWriter = new StringWriter();
-            new CSharpCodeProvider().GenerateCodeFromCompileUnit(compileUnit, textWriter, optsy);
-            //Console.WriteLine(textWriter.ToString());
+            if (!compilerSettings.SilentCompilation)
+                Console.WriteLine("Creating and running assembly...");
             CompilerResults compilerResults = new CSharpCodeProvider().CompileAssemblyFromDom(compilerParameters, compileUnit);
-            if (compilerResults.Errors != null && compilerResults.Errors.Count > 0)
+            if (compilerResults.Errors.HasErrors)
             {
                 foreach (CompilerError error in compilerResults.Errors)
                 {
                     Console.WriteLine(error.ToString());
                 }
+                if (compilerSettings.VisualizeOnError)
+                {
+                    Console.WriteLine("Generated visual for debugging:");
+
+                    StringWriter textWriter = new StringWriter();
+                    new CSharpCodeProvider().GenerateCodeFromCompileUnit(compileUnit, textWriter, new CodeGeneratorOptions() { BracingStyle = "C" });
+                    Console.WriteLine(textWriter.ToString());
+                }
+
+                throw new Exception("Errors occurred while compiling the JSON. Check the console for details.");
             }
-            var assemblyInstance = compilerResults.CompiledAssembly.CreateInstance(compilerSettings.EntryNamespace);
+
+            object assemblyInstance;
+            try
+            {
+                assemblyInstance = compilerResults.CompiledAssembly.CreateInstance(compilerSettings.EntryNamespace);
+            }
+            catch (IOException)
+            {
+                throw new Exception("Errors occurred while compiling the JSON. Check the console for details.");
+            }
 
             if (assemblyInstance == null)
             {
@@ -275,6 +318,11 @@ namespace JSONScript
             if (info.GetParameters().Length > 0)
             {
                 throw new Exception("The entry method must not contain any required arguments.");
+            }
+
+            if (!compilerSettings.SilentCompilation)
+            {
+                Console.WriteLine("Done!\n--------");
             }
 
             object result = info.Invoke(assemblyInstance, null);
