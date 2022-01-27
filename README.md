@@ -1,7 +1,8 @@
 # JSONScript
 Write in your favorite ~~data format~~ programming language now, with JSONScript!
 
-# Usage
-Clone the repo to any folder. Build the program, which will generate a `compilerSettings.json` file inside the specified directory, as well as some example files.
+## Supported languages
+- [C#](https://github.com/MikhailMCraft/JSONScript/tree/master/C%23)
+- [TypeScript](https://github.com/MikhailMCraft/JSONScript/tree/master/TypeScript)
 
-JSON files containing code are added to this directory to be read by the program. You **MUST** suffix each file with either `Class`, `Method`, or `Namespace`, otherwise they will be **IGNORED!!**
+`README`s are provided for each language.

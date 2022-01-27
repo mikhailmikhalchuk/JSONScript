@@ -1,0 +1,23 @@
+{
+  "name": "jsonscript",
+  "version": "1.0.0",
+  "description": "Program in JSON",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MikhailMCraft/JSONScript.git"
+  },
+  "author": "Cuno",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MikhailMCraft/JSONScript/issues"
+  },
+  "homepage": "https://github.com/MikhailMCraft/JSONScript#readme",
+  "dependencies": {
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
+  }
+}

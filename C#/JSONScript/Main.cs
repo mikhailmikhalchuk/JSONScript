@@ -18,7 +18,7 @@ namespace JSONScript
 {
     public class Main
     {
-        public static readonly string FilesDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSONScript");
+        public static readonly string FilesDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSONScript", "C#");
 
         public static readonly List<string> ValidAccessModifiers = new List<string>()
         {
