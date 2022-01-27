@@ -12,13 +12,13 @@ using System.CodeDom.Compiler;
 using Microsoft.CSharp;
 using System.Windows.Forms;
 using JSONScript.Common;
+using System.Diagnostics;
 
 namespace JSONScript
 {
     public class Main
     {
-
-        public static readonly string FilesDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "JSONScript");
+        public static readonly string FilesDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "JSONScript");
 
         public static readonly List<string> ValidAccessModifiers = new List<string>()
         {
@@ -31,17 +31,94 @@ namespace JSONScript
 
         public void Run()
         {
+            FileCompilerSettings compilerSettings = new FileCompilerSettings()
+            {
+                EntryMethod = "Main",
+                EntryNamespace = "ExampleProject.Program"
+            };
+
+            FileClassSettings classExample = new FileClassSettings()
+            {
+                AccessModifier = "none",
+                IsStatic = false,
+                Name = "Program",
+                Namespace = "ExampleProject",
+                Implements = new List<string>()
+                {
+                    "System",
+                    "System.Threading"
+                }
+            };
+
+            FileMethodSettings methodExample = new FileMethodSettings()
+            {
+                AccessModifier = "public",
+                Name = "Main",
+                Namespace = "ExampleProject.Program",
+                ReturnType = "System.Void",
+                IsStatic = false,
+                Code = "ExampleMethod(\"1\")"
+            };
+
+            FileMethodSettings methodExample2 = new FileMethodSettings()
+            {
+                AccessModifier = "private",
+                Name = "ExampleMethod",
+                Namespace = "ExampleProject.Program",
+                ReturnType = "System.Int32",
+                IsStatic = true,
+                ParameterTypes = new List<string>()
+                {
+                    "System.String"
+                },
+                ParameterNames = new List<string>()
+                {
+                    "exParam"
+                },
+                ParameterDefaultValues = new List<string>()
+                {
+                    "\"test\""
+                },
+                Code = "Console.WriteLine(\"Waiting 50 seconds...\");\nThread.Sleep(50000);\nreturn 3"
+            };
+
+            FileNamespaceSettings exampleNamespace = new FileNamespaceSettings()
+            {
+                Namespace = "ExampleProject",
+                Implements = new List<string>()
+                {
+                    "System",
+                    "System.Threading"
+                }
+            };
+
+            if (!Directory.Exists(FilesDirectory))
+            {
+                Directory.CreateDirectory(FilesDirectory);
+                string serialized = JsonSerializer.Serialize(compilerSettings, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "compilerSettings.json", serialized);
+
+                serialized = JsonSerializer.Serialize(methodExample, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Method-Main.json", serialized);
+
+                serialized = JsonSerializer.Serialize(methodExample2, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Method-Example.json", serialized);
+
+                serialized = JsonSerializer.Serialize(exampleNamespace, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Namespace-ExampleProject.json", serialized);
+
+                serialized = JsonSerializer.Serialize(classExample, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Class-Program.json", serialized);
+
+                Process.Start(FilesDirectory);
+                return;
+            }
+
             List<CodeMemberMethod> AllMethods = new List<CodeMemberMethod>();
             List<FileMethodSettings> AllMethodsFromDeserialized = new List<FileMethodSettings>();
             List<CodeTypeDeclaration> AllClasses = new List<CodeTypeDeclaration>();
             List<FileClassSettings> AllClassesFromDeserialized = new List<FileClassSettings>();
             List<CodeNamespace> AllNamespaces = new List<CodeNamespace>();
-
-            FileCompilerSettings compilerSettings = new FileCompilerSettings()
-            {
-                EntryMethod = "Main",
-                EntryNamespace = "Program"
-            };
 
             if (File.Exists(FilesDirectory + Path.DirectorySeparatorChar + "compilerSettings.json"))
             {
@@ -65,7 +142,6 @@ namespace JSONScript
             {
                 if (file.ToLower().Contains("method"))
                 {
-                    Console.WriteLine("Meth");
                     FileMethodSettings deserializedMethod = FileDeserializer.DeserializeMethod(file, out MemberAttributes attributes);
                     CodeMemberMethod memberMethod = new CodeMemberMethod
                     {
@@ -92,7 +168,6 @@ namespace JSONScript
                 }
                 else if (file.ToLower().Contains("class"))
                 {
-                    Console.WriteLine("cls");
                     FileClassSettings deserializedClass = FileDeserializer.DeserializeClass(file, out MemberAttributes attributes);
                     CodeTypeDeclaration memberClass = new CodeTypeDeclaration(deserializedClass.Name)
                     {
@@ -105,7 +180,6 @@ namespace JSONScript
                 }
                 else if (file.ToLower().Contains("namespace"))
                 {
-                    Console.WriteLine("nms");
                     FileNamespaceSettings deserializedNamespace = FileDeserializer.DeserializeNamespace(file);
                     CodeNamespace memberNamespace = new CodeNamespace(deserializedNamespace.Namespace);
                     AllNamespaces.Add(memberNamespace);
@@ -116,13 +190,10 @@ namespace JSONScript
             foreach (FileClassSettings cls in AllClassesFromDeserialized)
             {
                 List<FileMethodSettings> methodsDes = AllMethodsFromDeserialized.FindAll(m => m.Namespace == cls.Namespace + "." + cls.Name);
-                if (methodsDes.Count > 0) Console.WriteLine(methodsDes[0]);
                 List<CodeMemberMethod> mostEfficientList = new List<CodeMemberMethod>();
                 int innerInd = 0;
                 foreach (FileMethodSettings meth in AllMethodsFromDeserialized)
                 {
-                    Console.WriteLine(meth.Namespace);
-                    Console.WriteLine(cls.Namespace + cls.Name);
                     foreach (FileMethodSettings otherM in methodsDes)
                     {
                         if (meth.Equals(otherM))
@@ -179,7 +250,7 @@ namespace JSONScript
 
             StringWriter textWriter = new StringWriter();
             new CSharpCodeProvider().GenerateCodeFromCompileUnit(compileUnit, textWriter, optsy);
-            Console.WriteLine(textWriter.ToString());
+            //Console.WriteLine(textWriter.ToString());
             CompilerResults compilerResults = new CSharpCodeProvider().CompileAssemblyFromDom(compilerParameters, compileUnit);
             if (compilerResults.Errors != null && compilerResults.Errors.Count > 0)
             {
@@ -192,7 +263,7 @@ namespace JSONScript
 
             if (assemblyInstance == null)
             {
-                throw new ArgumentException("The entry namespace was not found. Make sure it is valid, and contains the namespace as well as the class name.");
+                throw new ArgumentException("The entry namespace was not found. Make sure it is valid, and contains only the namespace as well as the class name.");
             }
 
             MethodInfo info = assemblyInstance.GetType().GetMethod(compilerSettings.EntryMethod);
@@ -207,10 +278,7 @@ namespace JSONScript
             }
 
             object result = info.Invoke(assemblyInstance, null);
-            Console.WriteLine(result);
             //Console.WriteLine(containerNamespace.Name + deserialized2.Name);
-
-            Thread.Sleep(50000);
         }
     }
 }
