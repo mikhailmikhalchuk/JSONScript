@@ -2,7 +2,6 @@ package com.cuno.jsonscript.common;
 
 import org.json.*;
 import java.io.*;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -117,7 +116,22 @@ public class FileHelper {
                 data += myReader.nextLine();
             }
             JSONObject obj = new JSONObject(data);
-            compilerSettings.SilentCompilation = obj.getBoolean("SilentCompilation");
+            try {
+                compilerSettings.SilentCompilation = obj.getBoolean("SilentCompilation");
+                compilerSettings.DeleteAfterRun = obj.getBoolean("DeleteAfterRun");
+                compilerSettings.EntryClass = obj.getString("EntryClass");
+            }
+            catch (JSONException e) {
+                if (e.getMessage().contains("[\"SilentCompilation\"]")) {
+                    throw new IllegalArgumentException("The SilentCompilation parameter must be defined in compilerSettings.json.");
+                }
+                if (e.getMessage().contains("[\"DeleteAfterRun\"]")) {
+                    throw new IllegalArgumentException("The DeleteAfterRun parameter must be defined in compilerSettings.json.");
+                }
+                if (e.getMessage().contains("[\"EntryClass\"]")) {
+                    throw new IllegalArgumentException("The EntryClass parameter must be defined in compilerSettings.json.");
+                }
+            }
         }
         catch (FileNotFoundException e) {
             throw new RuntimeException(String.format("Failed to read file %s: Could not find file.", filePath));
@@ -165,6 +179,10 @@ public class FileHelper {
     }
 
     public static class FileCompilerSettings {
+        public String EntryClass;
+
         public boolean SilentCompilation;
+
+        public boolean DeleteAfterRun;
     }
 }

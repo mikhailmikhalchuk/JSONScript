@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Program {
     public static String FilesDirectory = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "/JSONScript/Java";
@@ -30,7 +29,9 @@ public class Program {
                 Files.createDirectory(Path.of(FilesDirectory + "/Compiler"));
                 System.out.println("Adding compilerSettings.json and example files...");
                 JSONObject compilerJson = new JSONObject();
+                compilerJson.put("EntryClass", "Program");
                 compilerJson.put("SilentCompilation", false);
+                compilerJson.put("DeleteAfterRun", true);
                 FileHelper.QuickWrite(FilesDirectory + "/compilerSettings.json", compilerJson.toString(2));
 
                 JSONObject exampleClass = new JSONObject();
@@ -94,8 +95,7 @@ public class Program {
         List<FileMethodSettings> AllMethods = new ArrayList<>();
         int ignoredFiles = 0;
 
-        String masterCode = """
-                """;
+        List<String> masterCode = new ArrayList<>();
         File folder = new File(FilesDirectory);
         File[] jsonList = folder.listFiles();
 
@@ -150,22 +150,32 @@ public class Program {
                 }
             }
 
-            masterCode += String.format("""
+            String masterImports = "";
+            for (int k = 0; k < settings.Imports.size(); k++) {
+                masterImports += "\nimport " + settings.Imports.get(k) + ";";
+            }
+
+            masterCode.add(String.format("""
                     package %s;
+                    
+                    %s
+                    
                     \n
                     %s class %s {
                         %s
                     }
-                    """, settings.Namespace, settings.AccessModifier != "none" ? settings.AccessModifier : "", settings.Name, masterMethods);
+                    """, settings.Namespace, masterImports, settings.AccessModifier != "none" ? settings.AccessModifier : "", settings.Name, masterMethods));
             //System.out.println(masterCode);
         }
 
         if (!compilerSettings.SilentCompilation) {
             System.out.println(String.format("Done! (%s method%s ignored)", AllMethods.size() - nonIgnoredMethods, AllMethods.size() - nonIgnoredMethods != 1 ? "s were" : " was"));
-            System.out.println("----\nWriting program to temporary file...");
+            System.out.println(String.format("----\nWriting program to temporary file%s...", AllClasses.size() != 1 ? "s" : ""));
         }
 
-        FileHelper.QuickWrite(FilesDirectory + "/Compiler/Program.java", masterCode);
+        for (int i = 0; i < AllClasses.size(); i++) {
+            FileHelper.QuickWrite(FilesDirectory + String.format("/Compiler/%s.java", AllClasses.get(i).Name), masterCode.get(i));
+        }
 
         if (!compilerSettings.SilentCompilation) {
             System.out.println("Done!");
@@ -174,17 +184,22 @@ public class Program {
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
-        int success = compiler.run(null, System.out, null, FilesDirectory + "/Compiler/Program.java");
+        boolean success = true;
+        for (int i = AllClasses.size(); i > AllClasses.size(); i--) {
+            success = compiler.run(null, System.out, null, FilesDirectory + String.format("/Compiler/%s.java", AllClasses.get(i).Name)) == 0;
+        }
 
-        if (success == 0 && !compilerSettings.SilentCompilation) {
-            System.out.println("Done!");
-            System.out.println("----\nRunning compiled file...\n--------");
+        if (success) {
+            if (!compilerSettings.SilentCompilation) {
+                System.out.println("Done!");
+                System.out.println("----\nRunning virtual machine...\n--------");
+            }
             Runtime rt = Runtime.getRuntime();
             try {
-                Process pr = rt.exec("java " + FilesDirectory + "/Compiler/Program.java");
+                Process pr = rt.exec("java " + FilesDirectory + String.format("/Compiler/%s.java", compilerSettings.EntryClass));
                 BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
 
-                String outLine = "";
+                String outLine;
                 while ((outLine = input.readLine()) != null) {
                     System.out.println(outLine);
                 }
@@ -198,7 +213,15 @@ public class Program {
                 }
             }
             catch (IOException e) {
-                throw new RuntimeException("Running compiled file failed: " + e.getMessage());
+                throw new RuntimeException("Running virtual machine failed: " + e.getMessage());
+            }
+        }
+        if (!compilerSettings.DeleteAfterRun) return;
+        folder = new File(FilesDirectory + "/Compiler");
+        File[] tempFiles = folder.listFiles();
+        for (int i = 0; i < tempFiles.length; i++) {
+            if (!tempFiles[i].delete()) {
+                System.err.println("Failed to delete temporary compiler files");
             }
         }
     }

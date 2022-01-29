@@ -365,3 +365,4 @@ FodyWeavers.xsd
 # IntelliJ IDEA configuration file
 Java/.idea/
 Java/.gradle/
+Java/build
