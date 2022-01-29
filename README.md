@@ -5,5 +5,6 @@ Write in your favorite ~~data format~~ programming language now, with JSONScript
 - [C#](https://github.com/MikhailMCraft/JSONScript/tree/master/C%23)
 - [TypeScript](https://github.com/MikhailMCraft/JSONScript/tree/master/TypeScript)
 - [Java](https://github.com/MikhailMCraft/JSONScript/tree/master/Java)
+- [Python](https://github.com/MikhailMCraft/JSONScript/tree/master/Python)
 
 `README`s are provided for each language.
