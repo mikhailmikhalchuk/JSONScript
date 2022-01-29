@@ -16,7 +16,7 @@ namespace JSONScript.Common
             attributes = 0;
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException("File not found.");
+                throw new FileNotFoundException($"File \"{filePath}\" not found.");
             }
             FileMethodSettings deserialized;
             try
@@ -25,7 +25,7 @@ namespace JSONScript.Common
             }
             catch (JsonException ex)
             {
-                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+                throw new ArgumentException($"File \"{filePath}\" contains invalid or malformed JSON.\nReason:\n{ex.Message}");
             }
             if (deserialized.AccessModifier == null)
             {
@@ -55,21 +55,7 @@ namespace JSONScript.Common
             {
                 throw new ArgumentException($"File \"{filePath}\": code must be present to run.");
             }
-            switch (deserialized.AccessModifier.ToLower())
-            {
-                case "public":
-                    attributes |= MemberAttributes.Public;
-                    break;
-                case "private":
-                    attributes |= MemberAttributes.Private;
-                    break;
-                case "protected":
-                    attributes |= MemberAttributes.FamilyAndAssembly;
-                    break;
-                case "internal":
-                    attributes |= MemberAttributes.FamilyOrAssembly;
-                    break;
-            }
+            attributes = GetAttributes(deserialized.AccessModifier, deserialized.IsStatic);
             return deserialized;
         }
 
@@ -78,7 +64,7 @@ namespace JSONScript.Common
             attributes = 0;
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException("File not found.");
+                throw new FileNotFoundException($"File \"{filePath}\" not found.");
             }
             FileClassSettings deserialized;
             try
@@ -87,7 +73,7 @@ namespace JSONScript.Common
             }
             catch (JsonException ex)
             {
-                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+                throw new ArgumentException($"File \"{filePath}\" contains invalid or malformed JSON.\nReason:\n{ex.Message}");
             }
             if (deserialized.AccessModifier == null)
             {
@@ -105,21 +91,7 @@ namespace JSONScript.Common
             {
                 throw new ArgumentException($"File \"{filePath}\" must specify a valid class namespace.");
             }
-            switch (deserialized.AccessModifier.ToLower())
-            {
-                case "public":
-                    attributes |= MemberAttributes.Public;
-                    break;
-                case "private":
-                    attributes |= MemberAttributes.Private;
-                    break;
-                case "protected":
-                    attributes |= MemberAttributes.FamilyAndAssembly;
-                    break;
-                case "internal":
-                    attributes |= MemberAttributes.FamilyOrAssembly;
-                    break;
-            }
+            attributes = GetAttributes(deserialized.AccessModifier, deserialized.IsStatic);
             return deserialized;
         }
 
@@ -127,7 +99,7 @@ namespace JSONScript.Common
         {
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException("File not found.");
+                throw new FileNotFoundException($"File \"{filePath}\" not found.");
             }
             FileNamespaceSettings deserialized;
             try
@@ -136,13 +108,74 @@ namespace JSONScript.Common
             }
             catch (JsonException ex)
             {
-                throw new ArgumentException($"File \"{filePath}\" contains invalid JSON.\nReason:\n{ex.Message}");
+                throw new ArgumentException($"File \"{filePath}\" contains invalid or malformed JSON.\nReason:\n{ex.Message}");
             }
             if (deserialized.Namespace == null)
             {
                 throw new ArgumentException($"File \"{filePath}\" must specify a valid namespace to create.");
             }
             return deserialized;
+        }
+
+        public static FileFieldSettings DeserializeField(string filePath, out MemberAttributes attributes)
+        {
+            attributes = 0;
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException($"File \"{filePath}\" not found.");
+            }
+            FileFieldSettings deserialized;
+            try
+            {
+                deserialized = JsonSerializer.Deserialize<FileFieldSettings>(File.ReadAllText(filePath));
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"File \"{filePath}\" contains invalid or malformed JSON.\nReason:\n{ex.Message}");
+            }
+            if (deserialized.AccessModifier == null)
+            {
+                throw new ArgumentException($"File \"{filePath}\" must specify a valid access modifier.");
+            }
+            if (!Main.ValidAccessModifiers.Contains(deserialized.AccessModifier.ToLower()))
+            {
+                throw new ArgumentException($"File \"{filePath}\": \"${deserialized.AccessModifier.ToLower()}\" is not a valid access modifier.");
+            }
+            if (deserialized.Name == null)
+            {
+                throw new ArgumentException($"File \"{filePath}\" must specify a valid field name.");
+            }
+            if (deserialized.Namespace == null)
+            {
+                throw new ArgumentException($"File \"{filePath}\" must specify a valid field namespace.");
+            }
+            attributes = GetAttributes(deserialized.AccessModifier, deserialized.IsStatic);
+            return deserialized;
+        }
+
+        private static MemberAttributes GetAttributes(string accessModifier, bool isStatic)
+        {
+            MemberAttributes attributes = 0;
+            switch (accessModifier.ToLower())
+            {
+                case "public":
+                    attributes |= MemberAttributes.Public;
+                    break;
+                case "private":
+                    attributes |= MemberAttributes.Private;
+                    break;
+                case "protected":
+                    attributes |= MemberAttributes.FamilyOrAssembly;
+                    break;
+                case "internal":
+                    attributes |= MemberAttributes.FamilyAndAssembly;
+                    break;
+            }
+            if (isStatic)
+            {
+                attributes |= MemberAttributes.Static;
+            }
+            return attributes;
         }
     }
 
@@ -185,6 +218,21 @@ namespace JSONScript.Common
         public string Namespace { get; set; }
 
         public List<string> Implements { get; set; } = new List<string>();
+    }
+
+    public class FileFieldSettings
+    {
+        public string Name { get; set; }
+
+        public string Namespace { get; set; }
+
+        public bool IsStatic { get; set; } = false;
+
+        public string Type { get; set; } = "System.Int32";
+
+        public string DeclarationValue { get; set; } = "";
+
+        public string AccessModifier { get; set; }
     }
 
     public class FileCompilerSettings

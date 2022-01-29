@@ -71,7 +71,7 @@ namespace JSONScript
                     Namespace = "ExampleProject.Program",
                     ReturnType = "System.Void",
                     IsStatic = false,
-                    Code = "ExampleMethod(\"1\")"
+                    Code = "ExampleMethod(\"exampleField.ToString()\")"
                 };
 
                 FileMethodSettings methodExample2 = new FileMethodSettings()
@@ -106,6 +106,16 @@ namespace JSONScript
                     }
                 };
 
+                FileFieldSettings exampleField = new FileFieldSettings()
+                {
+                    Name = "exampleField",
+                    IsStatic = true,
+                    AccessModifier = "internal",
+                    DeclarationValue = "1",
+                    Namespace = "ExampleProject.Program",
+                    Type = "System.Int32"
+                };
+
                 serialized = JsonSerializer.Serialize(methodExample, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Method-Main.json", serialized);
 
@@ -118,6 +128,9 @@ namespace JSONScript
                 serialized = JsonSerializer.Serialize(classExample, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Class-Program.json", serialized);
 
+                serialized = JsonSerializer.Serialize(exampleField, new JsonSerializerOptions() { WriteIndented = true });
+                File.WriteAllText(FilesDirectory + Path.DirectorySeparatorChar + "Field-ExampleField.json", serialized);
+
                 Console.WriteLine("Done!");
                 Process.Start(FilesDirectory);
                 return;
@@ -128,6 +141,8 @@ namespace JSONScript
             List<CodeTypeDeclaration> AllClasses = new List<CodeTypeDeclaration>();
             List<FileClassSettings> AllClassesFromDeserialized = new List<FileClassSettings>();
             List<CodeNamespace> AllNamespaces = new List<CodeNamespace>();
+            List<CodeMemberField> AllFields = new List<CodeMemberField>();
+            List<FileFieldSettings> AllFieldsFromDeserialized = new List<FileFieldSettings>();
 
             if (File.Exists(FilesDirectory + Path.DirectorySeparatorChar + "compilerSettings.json"))
             {
@@ -149,7 +164,10 @@ namespace JSONScript
 
             if (!compilerSettings.SilentCompilation)
                 Console.WriteLine("Looking for JSON files.");
-            foreach (var file in Directory.GetFiles(FilesDirectory))
+
+            int ignoredFiles = 0;
+
+            foreach (string file in Directory.GetFiles(FilesDirectory))
             {
                 if (file.ToLower().Contains("method"))
                 {
@@ -195,6 +213,19 @@ namespace JSONScript
                     CodeNamespace memberNamespace = new CodeNamespace(deserializedNamespace.Namespace);
                     AllNamespaces.Add(memberNamespace);
                 }
+                else if (file.ToLower().Contains("field"))
+                {
+                    FileFieldSettings deserializedField = FileDeserializer.DeserializeField(file, out MemberAttributes attributes);
+                    CodeMemberField memberField = new CodeMemberField(deserializedField.Type, deserializedField.Name);
+                    memberField.Attributes = attributes;
+                    memberField.InitExpression = new CodeSnippetExpression(deserializedField.DeclarationValue);
+                    AllFields.Add(memberField);
+                    AllFieldsFromDeserialized.Add(deserializedField);
+                }
+                else if (!file.ToLower().Contains("compilersettings"))
+                {
+                    ignoredFiles++;
+                }
             }
 
             if (!compilerSettings.SilentCompilation)
@@ -202,34 +233,67 @@ namespace JSONScript
                 Console.WriteLine($"Found {AllClasses.Count} class{(AllClasses.Count != 1 ? "es" : "")}.");
                 Console.WriteLine($"Found {AllMethods.Count} method{(AllMethods.Count != 1 ? "s" : "")}.");
                 Console.WriteLine($"Found {AllNamespaces.Count} namespace{(AllNamespaces.Count != 1 ? "s" : "")}.");
+                Console.WriteLine($"({ignoredFiles} file{(ignoredFiles != 1 ? "s" : "")} ignored)");
                 Console.WriteLine("Assigning methods to classes...");
             }
 
+            int ignoredMethods = 0;
             int index = 0;
             foreach (FileClassSettings cls in AllClassesFromDeserialized)
             {
                 List<FileMethodSettings> methodsDes = AllMethodsFromDeserialized.FindAll(m => m.Namespace == cls.Namespace + "." + cls.Name);
-                List<CodeMemberMethod> mostEfficientList = new List<CodeMemberMethod>();
                 int innerInd = 0;
+                bool added = false;
                 foreach (FileMethodSettings meth in AllMethodsFromDeserialized)
                 {
-                    foreach (FileMethodSettings otherM in methodsDes)
+                    foreach (FileMethodSettings otherM in methodsDes) //best metroid game
                     {
                         if (meth.Equals(otherM))
                         {
-                            mostEfficientList.Add(AllMethods[innerInd]);
+                            AllClasses[index].Members.Add(AllMethods[innerInd]);
+                            added = true;
                         }
                     }
                     innerInd++;
                 }
-                foreach (CodeMemberMethod method in mostEfficientList)
-                {
-                    AllClasses[index].Members.Add(method);
-                }
+                if (!added)
+                    ignoredMethods++;
             }
 
             if (!compilerSettings.SilentCompilation)
+            {
+                Console.WriteLine($"Done! ({ignoredMethods} method{(ignoredMethods != 1 ? "s" : "")} ignored)");
+                Console.WriteLine("Assigning fields to classes...");
+            }
+
+            int ignoredFields = 0;
+            index = 0;
+            foreach (FileFieldSettings fld in AllFieldsFromDeserialized)
+            {
+                List<FileFieldSettings> fieldsDes = AllFieldsFromDeserialized.FindAll(f => f.Namespace == fld.Namespace);
+                int innerInd = 0;
+                bool added = false;
+                foreach (FileFieldSettings feld in AllFieldsFromDeserialized)
+                {
+                    foreach (FileFieldSettings otherF in fieldsDes)
+                    {
+                        if (feld.Equals(otherF))
+                        {
+                            AllClasses[index].Members.Add(AllFields[innerInd]);
+                            added = true;
+                        }
+                    }
+                    innerInd++;
+                }
+                if (!added)
+                    ignoredFields++;
+            }
+
+            if (!compilerSettings.SilentCompilation)
+            {
+                Console.WriteLine($"Done! ({ignoredFields} field{(ignoredFields != 1 ? "s" : "")} ignored)");
                 Console.WriteLine("Adding classes to namespaces...");
+            }
 
             index = 0;
             foreach (CodeNamespace ns in AllNamespaces.ToList())
@@ -275,6 +339,7 @@ namespace JSONScript
 
             if (!compilerSettings.SilentCompilation)
                 Console.WriteLine("Creating and running assembly...");
+
             CompilerResults compilerResults = new CSharpCodeProvider().CompileAssemblyFromDom(compilerParameters, compileUnit);
             if (compilerResults.Errors.HasErrors)
             {
