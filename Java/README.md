@@ -33,4 +33,8 @@ JSON files containing code are added to this directory to be read by the program
 - `Code` (String) - the code to run upon invocation of the method.
 
 ### Compiler settings
+- `EntryClass` (String) - the class containing the `main` method.
+
+- `DeleteAfterRun` (boolean) - whether or not to delete the compiled JSON files after run.
+
 - `SilentCompilation` (boolean) - whether or not to report compilation status and progress to the terminal.
