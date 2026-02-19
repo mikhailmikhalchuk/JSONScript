@@ -1,0 +1,13 @@
+{
+  "namespace": "Math",
+  "functions": [
+    {
+      "name": "Add",
+      "params": [{"name": "a", "type": "int", "default": 10}, {"name": "b", "type": "int"}],
+      "locals": [],
+      "body": [
+        { "return": { "add": ["a", "b"] } }
+      ]
+    }
+  ]
+}

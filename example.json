@@ -1,0 +1,29 @@
+{
+  "functions": [
+    {
+      "name": "main",
+      "params": [],
+      "locals": [{
+        "name": "x",
+        "type": "float"
+      }, {
+        "name": "y",
+        "type": "int"
+      }, {
+        "name": "z",
+        "type": "int"
+      }, {
+        "name": "Hello",
+        "type": "string"
+      }],
+      "body": [
+        { "let": { "name": "x", "type": "float", "value": 2.5 } },
+        { "let": { "name": "y", "type": "int", "value": 5 } },
+        { "let": { "name": "Hello", "type": "string", "value": "Test" } },
+        { "print": { "add": ["x", {"add": [1, {"add": ["x", "y"]}]}] } },
+        { "let": { "name": "z", "type": "int", "value": {"multiply": [4, 6]} } },
+        { "print": "z" }
+      ]
+    }
+  ]
+}

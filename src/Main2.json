@@ -1,0 +1,30 @@
+{
+  "namespace": "Main",
+  "functions": [
+    {
+      "name": "main2",
+      "params": [],
+      "locals": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}],
+      "body": [
+        { "let": { "name": "x", "type": "int", "value": 5 } },
+        { "let": { "name": "y", "type": "int", "value": 4 } },
+        {
+          "if": {
+            "condition": {
+              "and": [
+                { "eq": ["x", 5] },
+                { "gt": ["y", 3] }
+              ]
+            },
+            "then": [
+              { "print": { "string": "both true" } }
+            ],
+            "else": [
+              { "print": { "string": "not both true" } }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
