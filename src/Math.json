@@ -3,6 +3,7 @@
   "functions": [
     {
       "name": "Add",
+      "type": "int",
       "params": [{"name": "a", "type": "int", "default": 10}, {"name": "b", "type": "int"}],
       "locals": [],
       "body": [

@@ -20,6 +20,18 @@ namespace JSONScript.Compiler
         private string pathToFileComp = "";
         private Dictionary<string, int> elementLineNumbers = new();
         private readonly Dictionary<string, CompiledFunction> functionTable = new();
+
+        private JSType? currentReturnType = null;
+
+        private static readonly HashSet<string> ReservedWords = new()
+        {
+            "let", "return", "print", "if", "else", "then", "while",
+            "call", "push", "set", "get", "and", "or", "eq", "gt", "lt",
+            "add", "subtract", "multiply", "divide", "length", "string",
+            "name", "true", "false", "null", "namespace", "function",
+            "params", "locals", "body", "args", "at", "value", "type",
+            "condition", "array"
+        };
         private DiagnosticBag diagnostics = new();
 
         public Dictionary<string, CompiledFunction> FunctionTable => functionTable;
@@ -95,6 +107,7 @@ namespace JSONScript.Compiler
             constants = new();
             bytecode = new();
             elementLineNumbers = new();
+            currentReturnType = null;
         }
 
         private void TrackLineNumbers(string jsonText)
@@ -212,6 +225,42 @@ namespace JSONScript.Compiler
             string funcName = func.GetProperty("name").GetString()!;
             string fullName = $"{currentNamespace}.{funcName}";
 
+            if (funcName == "main")
+            {
+                if (func.TryGetProperty("type", out var typeToShow))
+                {
+                    diagnostics.Report(pathToFileComp, $"Expected 'main' to be of type void but got '{typeToShow}' at line {GetLineNumber(path + ".type")}");
+                    return;
+                }
+
+                bool hasValidArgs = false;
+                if (func.TryGetProperty("params", out var mainParams))
+                {
+                    var paramList = mainParams.EnumerateArray().ToList();
+                    if (paramList.Count != 1)
+                    {
+                        diagnostics.Report(pathToFileComp, $"Expected 1 parameter but got {paramList.Count} at line {GetLineNumber(path + ".name")}");
+                        return;
+                    }
+                    else
+                    {
+                        var first = paramList[0];
+                        string? pType = first.TryGetProperty("type", out var t) ? t.GetString() : null;
+                        if (pType != "string[]")
+                        {
+                            diagnostics.Report(pathToFileComp, $"Expected parameter to be of type string[] but got '{pType}' at line {GetLineNumber(path + ".name")}");
+                            return;
+                        }
+                    }
+                    
+                }
+
+                if (!hasValidArgs)
+                {
+                    
+                }
+            }
+
             if (functionTable.ContainsKey(fullName))
             {
                 diagnostics.Report(pathToFileComp, $"Duplicate function '{fullName}'");
@@ -221,9 +270,19 @@ namespace JSONScript.Compiler
             int paramCount = 0;
             if (func.TryGetProperty("params", out var paramsEl))
             {
+                int paramIndex = 0;
                 foreach (var param in paramsEl.EnumerateArray())
                 {
                     string paramName = param.GetProperty("name").GetString()!;
+
+                    if (ReservedWords.Contains(paramName))
+                    {
+                        diagnostics.Report(pathToFileComp, $"'{paramName}' is a reserved keyword and cannot be used as a parameter name at line {GetLineNumber(path + ".params[" + paramIndex + "].name")}");
+                        paramIndex++;
+                        continue;
+                    }
+                    paramIndex++;
+
                     string typeStr = param.TryGetProperty("type", out var t) ? t.GetString() ?? "int" : "int";
                     var (baseType, elementType) = ParseType(typeStr);
                     locals[paramName] = new LocalInfo(locals.Count, baseType, elementType);
@@ -234,9 +293,16 @@ namespace JSONScript.Compiler
 
             if (func.TryGetProperty("locals", out var localsEl))
             {
+                int localsIndex = 0;
                 foreach (var loc in localsEl.EnumerateArray())
                 {
                     string name = loc.GetProperty("name").GetString()!;
+                    if (ReservedWords.Contains(name))
+                    {
+                        diagnostics.Report(pathToFileComp, $"'{name}' is a reserved keyword and cannot be used as a variable name at line {GetLineNumber(path + ".locals[" + localsIndex + "].name")}");
+                        localsIndex++;
+                        continue;
+                    }
                     string typeStr = loc.GetProperty("type").GetString() ?? "int";
                     var (baseType, elementType) = ParseType(typeStr);
                     if (!locals.ContainsKey(name))
@@ -248,6 +314,14 @@ namespace JSONScript.Compiler
             {
                 diagnostics.Report(pathToFileComp, $"Function '{fullName}' is missing a body");
                 return;
+            }
+
+            currentReturnType = null;
+            if (func.TryGetProperty("type", out var retTypeProp))
+            {
+                string retTypeStr = retTypeProp.GetString()!;
+                var (baseType, _) = ParseType(retTypeStr);
+                currentReturnType = baseType;
             }
 
             int stmtIndex = 0;
@@ -345,21 +419,6 @@ namespace JSONScript.Compiler
                 CompileExpression(printStmt, path + ".print");
                 bytecode.Add(Opcode.PRINT);
             }
-            else if (stmt.TryGetProperty("return", out var returnExpr))
-            {
-                foreach (var prop in stmt.EnumerateObject())
-                {
-                    if (prop.Name != "return")
-                    {
-                        int line = GetLineNumber(path + "." + prop.Name);
-                        diagnostics.Report(pathToFileComp, $"Unknown field '{prop.Name}' in return statement at line {line}");
-                        return;
-                    }
-                }
-
-                CompileExpression(returnExpr, path + ".return");
-                bytecode.Add(Opcode.RET);
-            }
             else if (stmt.TryGetProperty("call", out var callStmt))
             {
                 foreach (var prop in stmt.EnumerateObject())
@@ -382,7 +441,7 @@ namespace JSONScript.Compiler
                     }
                 }
 
-                CompileCall(callStmt, path + ".call");
+                CompileCall(callStmt, path + ".call", expectsValue: false);
             }
             else if (stmt.TryGetProperty("if", out var ifStmt))
             {
@@ -495,6 +554,35 @@ namespace JSONScript.Compiler
                 CompileExpression(valueEl, path + ".push.value");
                 bytecode.Add(Opcode.ARRAY_PUSH);
             }
+            else if (stmt.TryGetProperty("return", out var retExpr))
+            {
+                foreach (var prop in stmt.EnumerateObject())
+                {
+                    if (prop.Name != "return")
+                    {
+                        diagnostics.Report(pathToFileComp, $"Unknown field '{prop.Name}' in return statement at line {GetLineNumber(path + ".return")}");
+                        return;
+                    }
+                }
+
+                // Void function returning a value
+                if (currentReturnType == null)
+                {
+                    diagnostics.Report(pathToFileComp, $"Function is void but contains a return value at line {GetLineNumber(path + ".return")}");
+                    return;
+                }
+
+                // Type check return value
+                JSType? inferredType = InferType(retExpr);
+                if (inferredType.HasValue && !TypesCompatible(currentReturnType.Value, inferredType.Value))
+                {
+                    diagnostics.Report(pathToFileComp, $"Return type mismatch: function returns '{currentReturnType}' but got '{inferredType.Value}' at line {GetLineNumber(path + ".return")}");
+                    return;
+                }
+
+                CompileExpression(retExpr, path + ".return");
+                bytecode.Add(Opcode.RET);
+            }
             else
             {
                 string firstKey = stmt.EnumerateObject().FirstOrDefault().Name ?? "(no keys)";
@@ -503,7 +591,7 @@ namespace JSONScript.Compiler
             }
         }
 
-        private void CompileCall(JsonElement callExpr, string path)
+        private void CompileCall(JsonElement callExpr, string path, bool expectsValue = false)
         {
             if (!callExpr.TryGetProperty("namespace", out var nsProp) ||
                 !callExpr.TryGetProperty("function", out var funcProp))
@@ -565,6 +653,13 @@ namespace JSONScript.Compiler
                     diagnostics.Report(pathToFileComp, $"'{fullName}' has no parameter named '{argName}' at line {line}");
                     return;
                 }
+            }
+
+            if (expectsValue && sig.ReturnType == null)
+            {
+                int line = GetLineNumber(path);
+                diagnostics.Report(pathToFileComp, $"'{fullName}' is void and cannot be used as an expression at line {line}");
+                return;
             }
 
             int nameIndex = AddConstant(new Value(fullName));
@@ -634,7 +729,7 @@ namespace JSONScript.Compiler
 
                     if (expr.TryGetProperty("call", out var callExpr))
                     {
-                        CompileCall(callExpr, path + ".call");
+                        CompileCall(callExpr, path + ".call", expectsValue: true);
                         break;
                     }
 
@@ -658,6 +753,11 @@ namespace JSONScript.Compiler
                         if (!locals.TryGetValue(arrName, out var arrInfo))
                         {
                             diagnostics.Report(pathToFileComp, $"Undefined variable '{arrName}' at line {GetLineNumber(path + ".length")}");
+                            break;
+                        }
+                        if (arrInfo.Type != JSType.ARRAY)
+                        {
+                            diagnostics.Report(pathToFileComp, $"'{arrName}' is of type '{arrInfo.Type}' and does not have a length at line {GetLineNumber(path + ".length")}");
                             break;
                         }
                         Emit3(Opcode.LOAD_LOCAL, arrInfo.Index);
@@ -715,6 +815,12 @@ namespace JSONScript.Compiler
                             int index = 0;
                             foreach (var operand in operands.EnumerateArray())
                             {
+                                JSType? operandType = InferType(operand);
+                                if (operandType.HasValue && operandType.Value == JSType.BOOL && opName != "eq" && opName != "gt" && opName != "lt")
+                                {
+                                    diagnostics.Report(pathToFileComp, $"Cannot use bool in '{opName}' expression at line {GetLineNumber(path + "." + opName)}");
+                                    return;
+                                }
                                 CompileExpression(operand, path + $".{opName}[{index++}]");
                                 operandCount++;
                             }
@@ -912,7 +1018,15 @@ namespace JSONScript.Compiler
                         }
                     }
 
-                    signatureTable[fullName] = new FunctionSignature(fullName, paramList);
+                    JSType? returnType = null;
+                    if (func.TryGetProperty("type", out var retTypeProp))
+                    {
+                        string retTypeStr = retTypeProp.GetString() ?? "";
+                        var (baseType, _) = ParseType(retTypeStr);
+                        returnType = baseType;
+                    }
+
+                    signatureTable[fullName] = new FunctionSignature(fullName, paramList, returnType);
                 }
             }
         }

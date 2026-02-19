@@ -64,10 +64,18 @@ namespace JSONScript.VM
                         break;
                     }
 
-                    case Opcode.ADD: ExecuteBinary(frame, AddValues); break;
-                    case Opcode.SUB: ExecuteBinary(frame, SubtractValues); break;
-                    case Opcode.MUL: ExecuteBinary(frame, MultiplyValues); break;
-                    case Opcode.DIV: ExecuteBinary(frame, DivideValues); break;
+                    case Opcode.ADD:
+                        ExecuteBinary(frame, AddValues);
+                        break;
+                    case Opcode.SUB:
+                        ExecuteBinary(frame, SubtractValues);
+                        break;
+                    case Opcode.MUL:
+                        ExecuteBinary(frame, MultiplyValues);
+                        break;
+                    case Opcode.DIV:
+                        ExecuteBinary(frame, DivideValues);
+                        break;
 
                     case Opcode.CALL:
                     {
@@ -247,9 +255,7 @@ namespace JSONScript.VM
                         int index = ReadUInt16(frame);
                         Value val = Pop();
                         // Truncate to int regardless of value type
-                        frame.Locals[index] = val.Type == JSType.FLOAT
-                            ? new Value((long)val.FloatValue)
-                            : new Value(val.AsInt);
+                        frame.Locals[index] = val.Type == JSType.FLOAT ? new Value((long)val.FloatValue) : new Value(val.AsInt);
                         break;
                     }
 
@@ -257,8 +263,10 @@ namespace JSONScript.VM
                     {
                         int count = frame.Bytecode[frame.InstructionPointer++];
                         var elements = new List<Value>(count);
+
                         for (int i = 0; i < count; i++)
                             elements.Add(new Value()); // placeholder
+
                         for (int i = count - 1; i >= 0; i--)
                             elements[i] = Pop();
 
@@ -280,38 +288,44 @@ namespace JSONScript.VM
                     {
                         Value indexVal = Pop();
                         Value arrVal = Pop();
+
                         if (arrVal.Type != JSType.ARRAY)
                             throw new Exception("ARRAY_GET called on non-array value");
                         int index = (int)indexVal.AsInt;
+
                         if (index < 0 || index >= arrVal.ArrayValue!.Count)
                             throw new Exception($"Array index {index} out of bounds (length {arrVal.ArrayValue!.Count})");
+
                         stack.Add(arrVal.ArrayValue[index]);
                         break;
                     }
 
                     case Opcode.ARRAY_SET:
                     {
-                        Value val      = Pop();
+                        Value val = Pop();
                         Value indexVal = Pop();
-                        Value arrVal   = Pop();
+                        Value arrVal = Pop();
                         if (arrVal.Type != JSType.ARRAY)
                             throw new Exception("ARRAY_SET called on non-array value");
+
                         int index = (int)indexVal.AsInt;
                         if (index < 0 || index >= arrVal.ArrayValue!.Count)
                             throw new Exception($"Array index {index} out of bounds (length {arrVal.ArrayValue!.Count})");
+
                         arrVal.ArrayValue[index] = val;
                         break;
                     }
 
                     case Opcode.ARRAY_PUSH:
                     {
-                        Value val    = Pop();
+                        Value val = Pop();
                         Value arrVal = Pop();
                         if (arrVal.Type != JSType.ARRAY)
                             throw new Exception("ARRAY_PUSH called on non-array value");
                         // Runtime type check
                         if (arrVal.ElementType.HasValue && val.Type != arrVal.ElementType.Value)
                             throw new Exception($"Cannot push '{val.Type}' into '{arrVal.ElementType}[]' array");
+
                         arrVal.ArrayValue!.Add(val);
                         break;
                     }
@@ -319,9 +333,11 @@ namespace JSONScript.VM
                     case Opcode.ARRAY_LEN:
                     {
                         Value arrVal = Pop();
+                        
                         if (arrVal.Type != JSType.ARRAY)
                             throw new Exception("ARRAY_LEN called on non-array value");
-                        stack.Add(new Value((long)arrVal.ArrayValue!.Count));
+
+                        stack.Add(new Value(arrVal.ArrayValue!.Count));
                         break;
                     }
 
@@ -358,7 +374,8 @@ namespace JSONScript.VM
             int count = frame.Bytecode[frame.InstructionPointer++];
             var values = new List<Value>();
 
-            for (int i = 0; i < count; i++){
+            for (int i = 0; i < count; i++)
+            {
                 values.Add(Pop()); 
             }
 
@@ -415,11 +432,11 @@ namespace JSONScript.VM
             }
             return a.Type switch
             {
-                JSType.INT    => a.IntValue == b.IntValue,
-                JSType.FLOAT  => a.FloatValue == b.FloatValue,
+                JSType.INT => a.IntValue == b.IntValue,
+                JSType.FLOAT => a.FloatValue == b.FloatValue,
                 JSType.STRING => a.StringValue == b.StringValue,
-                JSType.BOOL   => a.BoolValue == b.BoolValue,
-                JSType.NULL   => true,
+                JSType.BOOL => a.BoolValue == b.BoolValue,
+                JSType.NULL => true,
                 _ => false
             };
         }

@@ -1,0 +1,29 @@
+{
+  "namespace": "Main.Helper",
+  "functions": [
+    {
+      "name": "LoopAdd",
+      "type": "int",
+      "params": [{"name": "iterations", "type": "int", "default": 10}, {"name": "toAdd", "type": "int", "default": 1}],
+      "locals": [
+        {"name": "nums", "type": "int[]"},
+        {"name": "i", "type": "int"},
+        {"name": "x", "type": "int"}
+      ],
+      "body": [
+        { "let": { "name": "i", "value": 0 } },
+        { "let": { "name": "x", "value": 0 } },
+        {
+          "while": {
+            "condition": { "lt": ["i", "iterations"] },
+            "body": [
+              { "let": { "name": "x", "value": { "add": ["x", "toAdd" ] } } },
+              { "let": { "name": "i", "value": { "add": ["i", 1] } } }
+            ]
+          }
+        },
+        { "return": "x" }
+      ]
+    }
+  ]
+}

@@ -3,27 +3,14 @@
   "functions": [
     {
       "name": "main",
-      "params": [],
+      "params": [{"name": "arguments", "type": "string[]"}],
       "locals": [
         {"name": "nums", "type": "int[]"},
         {"name": "i", "type": "int"},
         {"name": "x", "type": "int"}
       ],
       "body": [
-        { "let": { "name": "nums", "value": [1, 2, 3, 5, 6, 7] } },
-        { "let": { "name": "x", "value": 0 } },
-        { "push": { "array": "nums", "value": 4 } },
-        { "let": { "name": "i", "value": 0 } },
-        {
-          "while": {
-            "condition": { "lt": ["i", { "length": "nums" }] },
-            "body": [
-              { "let": { "name": "x", "value": { "add": ["x", { "get": { "array": "nums", "at": "i" } }] } } },
-              { "print": "x" },
-              { "let": { "name": "i", "value": { "add": ["i", 1] } } }
-            ]
-          }
-        }
+        { "print": {"add": [3, { "call": {"namespace": "Main.Helper", "function": "LoopAdd", "args": {"iterations": 5, "toAdd": 4} } } ] } }
       ]
     }
   ]

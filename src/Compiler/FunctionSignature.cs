@@ -18,15 +18,15 @@ namespace JSONScript.Compiler
 
     public class FunctionSignature
     {
-        public string FullName { get; }
-        public List<FunctionParam> Params { get; }
-        public int ParamCount => Params.Count;
-        public int RequiredCount => Params.Count(p => !p.HasDefault);
+        public string Name;
+        public List<FunctionParam> Params;
+        public JSType? ReturnType; // null means void
 
-        public FunctionSignature(string fullName, List<FunctionParam> parameters)
+        public FunctionSignature(string name, List<FunctionParam> param, JSType? returnType = null)
         {
-            FullName = fullName;
-            Params = parameters;
+            Name = name;
+            Params = param;
+            ReturnType = returnType;
         }
     }
 }
