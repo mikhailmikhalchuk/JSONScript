@@ -1,0 +1,151 @@
+{
+  "namespace": "FileSystem.FileReader",
+  "functions": [
+    {
+      "name": "open",
+      "params": [{"name": "path", "type": "string"}],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fopen",
+            "args": [
+              {"value": "path",             "type": "string"},
+              {"value": {"string": "rb"},   "type": "string"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "size",
+      "params": [{"name": "file", "type": "*void"}],
+      "locals": [{"name": "fileSize", "type": "int"}],
+      "type": "int",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fseek",
+            "args": [
+              {"value": "file", "type": "*void"},
+              {"value": 0,      "type": "int"},
+              {"value": 2,      "type": "int"}
+            ],
+            "returns": "void"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "ftell",
+            "args": [{"value": "file", "type": "*void"}],
+            "returns": "int",
+            "into": "fileSize"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "rewind",
+            "args": [{"value": "file", "type": "*void"}],
+            "returns": "void"
+          }
+        },
+        { "return": "fileSize" }
+      ]
+    },
+    {
+      "name": "readBytes",
+      "params": [
+        {"name": "file",   "type": "*void"},
+        {"name": "buffer", "type": "*void"},
+        {"name": "size",   "type": "int"}
+      ],
+      "locals": [{"name": "bytesRead", "type": "int"}],
+      "type": "int",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fread",
+            "args": [
+              {"value": "buffer", "type": "*void"},
+              {"value": 1,        "type": "int"},
+              {"value": "size",   "type": "int"},
+              {"value": "file",   "type": "*void"}
+            ],
+            "returns": "int",
+            "into": "bytesRead"
+          }
+        },
+        { "return": "bytesRead" }
+      ]
+    },
+    {
+      "name": "readString",
+      "params": [{"name": "path", "type": "string"}],
+      "locals": [
+        {"name": "file",      "type": "*void"},
+        {"name": "fileSize",  "type": "int"},
+        {"name": "buffer",    "type": "*void"},
+        {"name": "bytesRead", "type": "int"},
+        {"name": "result",    "type": "string"}
+      ],
+      "type": "string",
+      "body": [
+        {
+          "let": {"name": "file", "value": {
+            "call": {"namespace": "FileSystem.FileReader", "function": "open",
+              "args": {"path": "path"}}
+          }}
+        },
+        {
+          "let": {"name": "fileSize", "value": {
+            "call": {"namespace": "FileSystem.FileReader", "function": "size",
+              "args": {"file": "file"}}
+          }}
+        },
+        { "alloc": {"size": "fileSize", "into": "buffer"} },
+        {
+          "let": {"name": "bytesRead", "value": {
+            "call": {"namespace": "FileSystem.FileReader", "function": "readBytes",
+              "args": {"file": "file", "buffer": "buffer", "size": "fileSize"}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "Sys", "function": "PtrToString",
+              "args": {"ptr": "buffer", "len": "bytesRead"}}
+          }}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileReader", "function": "close",
+            "args": {"file": "file"}}
+        },
+        { "free": "buffer" },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "close",
+      "params": [{"name": "file", "type": "*void"}],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fclose",
+            "args": [{"value": "file", "type": "*void"}],
+            "returns": "void"
+          }
+        }
+      ]
+    }
+  ]
+}

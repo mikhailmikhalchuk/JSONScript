@@ -29,20 +29,21 @@ namespace JSONScript.VM.Graphics.Metal
 
         public MetalRenderer(IntPtr view, int width, int height)
         {
-            //create metal device (ends up just being gpu)
             device = MTLCreateSystemDefaultDevice();
             if (device == IntPtr.Zero)
-                throw new Exception("Failed to create Metal device: no GPU found");
+                throw new Exception("Failed to create Metal device");
 
-            //create command queue
+            DevicePtr = device;  // add this
+
             var newCommandQueue = ObjC.RegisterName("newCommandQueue");
             commandQueue = ObjC.MsgSend(device, newCommandQueue);
 
-            //create cametallayer and attach to view
             var caMetalLayerClass = ObjC.GetClass("CAMetalLayer");
             var layerAlloc = ObjC.RegisterName("alloc");
-            var layerInit = ObjC.RegisterName("init");
+            var layerInit  = ObjC.RegisterName("init");
             metalLayer = ObjC.MsgSend(ObjC.MsgSend(caMetalLayerClass, layerAlloc), layerInit);
+
+            LayerPtr = metalLayer;  // add this
 
             //set device on layer
             var setDevice = ObjC.RegisterName("setDevice:");

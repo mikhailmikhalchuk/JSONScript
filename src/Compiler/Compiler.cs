@@ -88,7 +88,8 @@ namespace JSONScript.Compiler
 
             try
             {
-                using var doc = JsonDocument.Parse(jsonText);
+                var options = new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip };
+                using var doc = JsonDocument.Parse(jsonText, options);
                 CompileProgram(doc.RootElement);
             }
             catch (Exception e)
@@ -121,7 +122,8 @@ namespace JSONScript.Compiler
         private void TrackLineNumbers(string jsonText)
         {
             var bytes = Encoding.UTF8.GetBytes(jsonText);
-            var reader = new Utf8JsonReader(bytes, isFinalBlock: true, state: default);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+            var reader = new Utf8JsonReader(bytes, options);
 
             var pathStack = new Stack<string>();
             var arrayIndexStack = new Stack<int>();
@@ -638,8 +640,7 @@ namespace JSONScript.Compiler
                     return;
                 }
 
-                if (!callProp.TryGetProperty("namespace", out var nsProp) ||
-                    !callProp.TryGetProperty("function", out var fnProp))
+                if (!callProp.TryGetProperty("namespace", out var nsProp) || !callProp.TryGetProperty("function", out var fnProp))
                 {
                     diagnostics.Report(pathToFileComp, $"'on.call' requires 'namespace' and 'function' at line {GetLineNumber(path + ".on.call")}");
                     return;
@@ -678,7 +679,7 @@ namespace JSONScript.Compiler
                     return;
                 }
 
-                string lib    = libProp.GetString()!;
+                string lib = libProp.GetString()!;
                 string symbol = symbolProp.GetString()!;
 
                 // Collect args
@@ -767,9 +768,9 @@ namespace JSONScript.Compiler
                     return;
                 }
 
-                CompileExpression(ptrProp,    path + ".memwrite.ptr");
+                CompileExpression(ptrProp, path + ".memwrite.ptr");
                 CompileExpression(offsetProp, path + ".memwrite.offset");
-                CompileExpression(valueProp,  path + ".memwrite.value");
+                CompileExpression(valueProp, path + ".memwrite.value");
                 int typeIdx = AddConstant(new Value(typeProp.GetString()!));
                 Emit3(Opcode.PUSH_CONST, typeIdx);
                 bytecode.Add(Opcode.MEM_WRITE);
@@ -789,7 +790,7 @@ namespace JSONScript.Compiler
                     return;
                 }
 
-                CompileExpression(ptrProp,    path + ".memread.ptr");
+                CompileExpression(ptrProp, path + ".memread.ptr");
                 CompileExpression(offsetProp, path + ".memread.offset");
                 int typeIdx = AddConstant(new Value(typeProp.GetString()!));
                 Emit3(Opcode.PUSH_CONST, typeIdx);
@@ -840,7 +841,9 @@ namespace JSONScript.Compiler
                     return;
                 }
                 foreach (var arg in args.EnumerateObject())
+                {
                     namedArgs[arg.Name] = arg.Value;
+                }
             }
 
             int argCount = 0;
@@ -1232,7 +1235,7 @@ namespace JSONScript.Compiler
             JsonDocument doc;
             try
             {
-                doc = JsonDocument.Parse(jsonText);
+                doc = JsonDocument.Parse(jsonText, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
             }
             catch (Exception e)
             {
@@ -1311,6 +1314,49 @@ namespace JSONScript.Compiler
                 new FunctionParam("g"),
                 new FunctionParam("b"),
             }, null);
+
+            signatureTable["Gfx.DrawTriangle"] = new FunctionSignature("Gfx.DrawTriangle", new List<FunctionParam>
+            {
+                new FunctionParam("x1"),
+                new FunctionParam("y1"),
+                new FunctionParam("x2"),
+                new FunctionParam("y2"),
+                new FunctionParam("x3"),
+                new FunctionParam("y3"),
+                new FunctionParam("r"),
+                new FunctionParam("g"),
+                new FunctionParam("b"),
+            }, null);
+
+            signatureTable["Gfx.DrawCircle"] = new FunctionSignature("Gfx.DrawCircle", new List<FunctionParam>
+            {
+                new FunctionParam("x"),
+                new FunctionParam("y"),
+                new FunctionParam("radius"),
+                new FunctionParam("r"),
+                new FunctionParam("g"),
+                new FunctionParam("b"),
+            }, null);
+
+            signatureTable["Sys.PtrToString"] = new FunctionSignature("Sys.PtrToString", new List<FunctionParam>
+            {
+                new FunctionParam("ptr"),
+                new FunctionParam("len")
+            }, JSType.STRING);
+
+            signatureTable["Sys.ReplaceRegion"] = new FunctionSignature("Sys.ReplaceRegion", new List<FunctionParam>
+            {
+                new FunctionParam("texture"),
+                new FunctionParam("buffer"),
+                new FunctionParam("width"),
+                new FunctionParam("height"),
+            }, null);
+
+            signatureTable["Sys.GetSymbolPtr"] = new FunctionSignature("Sys.GetSymbolPtr", new List<FunctionParam>
+            {
+                new FunctionParam("lib"),
+                new FunctionParam("symbol"),
+            }, JSType.POINTER);
 
             signatureTable["Gfx.GetLayer"]  = new FunctionSignature("Gfx.GetLayer",  new List<FunctionParam>(), JSType.POINTER);
             signatureTable["Gfx.GetDevice"] = new FunctionSignature("Gfx.GetDevice", new List<FunctionParam>(), JSType.POINTER);

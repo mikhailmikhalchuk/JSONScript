@@ -106,8 +106,24 @@ namespace JSONScript.VM.Graphics.Metal
         [LibraryImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
         internal static partial IntPtr MsgSendIndex(IntPtr receiver, IntPtr selector, ulong index);
 
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        public static extern void ReplaceRegion(
+            IntPtr receiver,
+            IntPtr selector,
+            MTLRegion region,
+            ulong mipmapLevel,
+            IntPtr bytes,
+            ulong bytesPerRow);
+
         [LibraryImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
         internal static partial IntPtr MsgSendEvent(IntPtr receiver, IntPtr selector, IntPtr mask, IntPtr date, IntPtr mode, IntPtr dequeue);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MTLRegion
+    {
+        public ulong OriginX, OriginY, OriginZ;
+        public ulong Width, Height, Depth;
     }
 
     [StructLayout(LayoutKind.Sequential)]

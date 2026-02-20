@@ -1,0 +1,671 @@
+{
+  "namespace": "Metal.Text",
+  "functions": [
+    {
+      "name": "createTexture",
+      "params": [
+        {"name": "device", "type": "*void"},
+        {"name": "width",  "type": "int"},
+        {"name": "height", "type": "int"}
+      ],
+      "locals": [
+        {"name": "descClass",      "type": "*void"},
+        {"name": "desc",           "type": "*void"},
+        {"name": "setPixFmtSel",   "type": "*void"},
+        {"name": "setWidthSel",    "type": "*void"},
+        {"name": "setHeightSel",   "type": "*void"},
+        {"name": "setUsageSel",    "type": "*void"},
+        {"name": "newTextureSel",  "type": "*void"},
+        {"name": "texture",        "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "descClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+              "args": {"className": {"string": "MTLTextureDescriptor"}}}
+          }}
+        },
+        {
+          "let": {"name": "desc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "init",
+              "args": {"obj": {
+                "call": {"namespace": "Metal.ObjC", "function": "alloc",
+                  "args": {"cls": "descClass"}}
+              }}}
+          }}
+        },
+        {
+          "let": {"name": "setPixFmtSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setPixelFormat:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {"receiver": "desc", "selector": "setPixFmtSel", "arg0": 80}}
+        },
+        {
+          "let": {"name": "setWidthSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setWidth:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {"receiver": "desc", "selector": "setWidthSel", "arg0": "width"}}
+        },
+        {
+          "let": {"name": "setHeightSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setHeight:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {"receiver": "desc", "selector": "setHeightSel", "arg0": "height"}}
+        },
+        {
+          "let": {"name": "setUsageSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setUsage:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {"receiver": "desc", "selector": "setUsageSel", "arg0": 1}}
+        },
+        {
+          "let": {"name": "newTextureSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "newTextureWithDescriptor:"}}}
+          }}
+        },
+        {
+          "let": {"name": "texture", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+              "args": {
+                "receiver": "device",
+                "selector": "newTextureSel",
+                "arg0":     "desc"
+              }}
+          }}
+        },
+        { "return": "texture" }
+      ]
+    },
+    {
+      "name": "createBitmapContext",
+      "params": [
+        {"name": "buffer", "type": "*void"},
+        {"name": "width",  "type": "int"},
+        {"name": "height", "type": "int"}
+      ],
+      "locals": [
+        {"name": "colorSpace", "type": "*void"},
+        {"name": "context",    "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+            "symbol": "CGColorSpaceCreateDeviceRGB",
+            "args": [],
+            "returns": "*void",
+            "into": "colorSpace"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+            "symbol": "CGBitmapContextCreate",
+            "args": [
+              {"value": "buffer",     "type": "*void"},
+              {"value": "width",      "type": "int"},
+              {"value": "height",     "type": "int"},
+              {"value": 8,            "type": "int"},
+              {"value": 0,            "type": "int"},
+              {"value": "colorSpace", "type": "*void"},
+              {"value": 8482,         "type": "int"}
+            ],
+            "returns": "*void",
+            "into": "context"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+            "symbol": "CGColorSpaceRelease",
+            "args": [{"value": "colorSpace", "type": "*void"}],
+            "returns": "void"
+          }
+        },
+        { "return": "context" }
+      ]
+    },
+    {
+  "name": "drawStringIntoContext",
+  "params": [
+    {"name": "context",  "type": "*void"},
+    {"name": "text",     "type": "string"},
+    {"name": "fontSize", "type": "float"},
+    {"name": "x",        "type": "float"},
+    {"name": "y",        "type": "float"}
+  ],
+  "locals": [
+    {"name": "fontName",  "type": "*void"},
+    {"name": "ctFont",    "type": "*void"},
+    {"name": "attrDict",  "type": "*void"},
+    {"name": "nsText",    "type": "*void"},
+    {"name": "attrStr",   "type": "*void"},
+    {"name": "line",      "type": "*void"}
+  ],
+  "body": [
+    {
+      "let": {"name": "fontName", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "nsString",
+          "args": {"str": {"string": "Helvetica"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreText.framework/CoreText",
+        "symbol": "CTFontCreateWithName",
+        "args": [
+          {"value": "fontName", "type": "*void"},
+          {"value": "fontSize", "type": "float64"},
+          {"value": 0,          "type": "int"}
+        ],
+        "returns": "*void",
+        "into": "ctFont"
+      }
+    },
+    {
+      "let": {"name": "attrDict", "value": {
+        "call": {"namespace": "Metal.Text", "function": "createFontAttrDict",
+          "args": {"ctFont": "ctFont"}}
+      }}
+    },
+    {
+      "let": {"name": "nsText", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "nsString",
+          "args": {"str": "text"}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/Foundation.framework/Foundation",
+        "symbol": "CFAttributedStringCreate",
+        "args": [
+          {"value": 0,          "type": "int"},
+          {"value": "nsText",   "type": "*void"},
+          {"value": "attrDict", "type": "*void"}
+        ],
+        "returns": "*void",
+        "into": "attrStr"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreText.framework/CoreText",
+        "symbol": "CTLineCreateWithAttributedString",
+        "args": [{"value": "attrStr", "type": "*void"}],
+        "returns": "*void",
+        "into": "line"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+        "symbol": "CGContextSetRGBFillColor",
+        "args": [
+          {"value": "context", "type": "*void"},
+          {"value": 1.0,       "type": "float64"},
+          {"value": 1.0,       "type": "float64"},
+          {"value": 1.0,       "type": "float64"},
+          {"value": 1.0,       "type": "float64"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+        "symbol": "CGContextSetTextPosition",
+        "args": [
+          {"value": "context", "type": "*void"},
+          {"value": "x",       "type": "float64"},
+          {"value": "y",       "type": "float64"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreText.framework/CoreText",
+        "symbol": "CTLineDraw",
+        "args": [
+          {"value": "line",    "type": "*void"},
+          {"value": "context", "type": "*void"}
+        ],
+        "returns": "void"
+      }
+    }
+  ]
+},
+    {
+        "name": "uploadToTexture",
+        "params": [
+            {"name": "texture", "type": "*void"},
+            {"name": "buffer",  "type": "*void"},
+            {"name": "width",   "type": "int"},
+            {"name": "height",  "type": "int"}
+        ],
+        "locals": [],
+        "body": [
+            {
+            "call": {"namespace": "Sys", "function": "ReplaceRegion",
+                "args": {
+                "texture": "texture",
+                "buffer":  "buffer",
+                "width":   "width",
+                "height":  "height"
+                }}
+            }
+        ]
+    },
+    {
+  "name": "createFontAttrDict",
+  "params": [{"name": "ctFont", "type": "*void"}],
+  "locals": [
+    {"name": "fontAttrKey", "type": "*void"},
+    {"name": "keysPtr",     "type": "*void"},
+    {"name": "valuesPtr",   "type": "*void"},
+    {"name": "dict",        "type": "*void"}
+  ],
+  "type": "*void",
+  "body": [
+    {
+      "let": {"name": "fontAttrKey", "value": {
+        "call": {"namespace": "Sys", "function": "GetSymbolPtr",
+          "args": {
+            "lib":    {"string": "/System/Library/Frameworks/CoreText.framework/CoreText"},
+            "symbol": {"string": "kCTFontAttributeName"}
+          }}
+      }}
+    },
+    { "alloc": {"size": 8, "into": "keysPtr"} },
+    { "alloc": {"size": 8, "into": "valuesPtr"} },
+    { "memwrite": {"ptr": "keysPtr",   "offset": 0, "value": "fontAttrKey", "type": "ptr"} },
+    { "memwrite": {"ptr": "valuesPtr", "offset": 0, "value": "ctFont",      "type": "ptr"} },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
+        "symbol": "CFDictionaryCreate",
+        "args": [
+          {"value": 0,           "type": "int"},
+          {"value": "keysPtr",   "type": "*void"},
+          {"value": "valuesPtr", "type": "*void"},
+          {"value": 1,           "type": "int"},
+          {"value": 0,           "type": "int"},
+          {"value": 0,           "type": "int"}
+        ],
+        "returns": "*void",
+        "into": "dict"
+      }
+    },
+    { "free": "keysPtr" },
+    { "free": "valuesPtr" },
+    { "return": "dict" }
+  ]
+},
+{
+  "name": "renderText",
+  "params": [
+    {"name": "device",        "type": "*void"},
+    {"name": "commandQueue",  "type": "*void"},
+    {"name": "pipelineState", "type": "*void"},
+    {"name": "layer",         "type": "*void"},
+    {"name": "text",          "type": "string"},
+    {"name": "fontSize",      "type": "float"},
+    {"name": "x",             "type": "float"},
+    {"name": "y",             "type": "float"},
+    {"name": "texWidth",      "type": "int"},
+    {"name": "texHeight",     "type": "int"}
+  ],
+  "locals": [
+    {"name": "bufferSize",    "type": "int"},
+    {"name": "pixelBuffer",   "type": "*void"},
+    {"name": "cgContext",     "type": "*void"},
+    {"name": "texture",       "type": "*void"},
+    {"name": "drawable",      "type": "*void"},
+    {"name": "drawTexture",   "type": "*void"},
+    {"name": "rpd",           "type": "*void"},
+    {"name": "commandBuffer", "type": "*void"},
+    {"name": "encoder",       "type": "*void"},
+    {"name": "posBuffer",     "type": "*void"},
+    {"name": "uvBuffer",      "type": "*void"},
+    {"name": "setPipeSel",    "type": "*void"},
+    {"name": "setVertBufSel", "type": "*void"},
+    {"name": "setFragTexSel", "type": "*void"},
+    {"name": "drawPrimSel",   "type": "*void"},
+    {"name": "ndcX",          "type": "float"},
+    {"name": "ndcY",          "type": "float"},
+    {"name": "ndcW",          "type": "float"},
+    {"name": "ndcH",          "type": "float"},
+    {"name": "sampler",        "type": "*void"},
+    {"name": "setFragSampSel", "type": "*void"}
+  ],
+  "body": [
+    { "let": {"name": "bufferSize", "value": {"multiply": [{"multiply": ["texWidth", "texHeight"]}, 4]}} },
+    { "alloc": {"size": "bufferSize", "into": "pixelBuffer"} },
+
+    {
+      "let": {"name": "cgContext", "value": {
+        "call": {"namespace": "Metal.Text", "function": "createBitmapContext",
+          "args": {"buffer": "pixelBuffer", "width": "texWidth", "height": "texHeight"}}
+      }}
+    },
+
+    {
+      "call": {"namespace": "Metal.Text", "function": "drawStringIntoContext",
+        "args": {
+          "context":  "cgContext",
+          "text":     "text",
+          "fontSize": "fontSize",
+          "x":        "x",
+          "y":        "y"
+        }}
+    },
+
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+        "symbol": "CGContextFlush",
+        "args": [{"value": "cgContext", "type": "*void"}],
+        "returns": "void"
+      }
+    },
+
+    {
+      "let": {"name": "texture", "value": {
+        "call": {"namespace": "Metal.Text", "function": "createTexture",
+          "args": {"device": "device", "width": "texWidth", "height": "texHeight"}}
+      }}
+    },
+
+    {
+      "call": {"namespace": "Metal.Text", "function": "uploadToTexture",
+        "args": {
+          "texture": "texture",
+          "buffer":  "pixelBuffer",
+          "width":   "texWidth",
+          "height":  "texHeight"
+        }}
+    },
+
+    { "free": "pixelBuffer" },
+
+    { "let": {"name": "ndcX", "value": {"subtract": [{"divide": ["x", 400.0]}, 1.0]}} },
+    { "let": {"name": "ndcY", "value": {"subtract": [1.0, {"divide": ["y", 300.0]}]}} },
+    { "let": {"name": "ndcW", "value": {"divide": [{"multiply": ["texWidth",  1.0]}, 400.0]}} },
+    { "let": {"name": "ndcH", "value": {"divide": [{"multiply": ["texHeight", 1.0]}, 300.0]}} },
+
+    { "alloc": {"size": 48, "into": "posBuffer"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 0,  "value": "ndcX",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 4,  "value": "ndcY",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 8,  "value": {"add": ["ndcX", "ndcW"]},      "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 12, "value": "ndcY",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 16, "value": "ndcX",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 20, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 24, "value": {"add": ["ndcX", "ndcW"]},      "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 28, "value": "ndcY",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 32, "value": {"add": ["ndcX", "ndcW"]},      "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 36, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 40, "value": "ndcX",                         "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 44, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+
+    { "alloc": {"size": 48, "into": "uvBuffer"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 0,  "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 4,  "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 8,  "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 12, "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 16, "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 20, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 24, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 28, "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 32, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 36, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 40, "value": 0.0, "type": "float32"} },
+    { "memwrite": {"ptr": "uvBuffer", "offset": 44, "value": 1.0, "type": "float32"} },
+
+    {
+      "let": {"name": "drawable", "value": {
+        "call": {"namespace": "Metal.MetalLayer", "function": "nextDrawable",
+          "args": {"layer": "layer"}}
+      }}
+    },
+    {
+      "let": {"name": "drawTexture", "value": {
+        "call": {"namespace": "Metal.MetalLayer", "function": "getTexture",
+          "args": {"drawable": "drawable"}}
+      }}
+    },
+    {
+      "let": {"name": "rpd", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createRenderPassDescriptor",
+          "args": {"texture": "drawTexture"}}
+      }}
+    },
+    {
+      "let": {"name": "commandBuffer", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createCommandBuffer",
+          "args": {"commandQueue": "commandQueue"}}
+      }}
+    },
+    {
+      "let": {"name": "encoder", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createEncoder",
+          "args": {"commandBuffer": "commandBuffer", "rpd": "rpd"}}
+      }}
+    },
+
+    {
+      "let": {"name": "setPipeSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setRenderPipelineState:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+        "args": {"receiver": "encoder", "selector": "setPipeSel", "arg0": "pipelineState"}}
+    },
+
+    {
+      "let": {"name": "setVertBufSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setVertexBytes:length:atIndex:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",      "type": "*void"},
+          {"value": "setVertBufSel","type": "*void"},
+          {"value": "posBuffer",    "type": "*void"},
+          {"value": 48,             "type": "int"},
+          {"value": 0,              "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",      "type": "*void"},
+          {"value": "setVertBufSel","type": "*void"},
+          {"value": "uvBuffer",     "type": "*void"},
+          {"value": 48,             "type": "int"},
+          {"value": 1,              "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+
+    {
+      "let": {"name": "setFragTexSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setFragmentTexture:atIndex:"}}}
+      }}
+    },
+    {
+        "let": {"name": "sampler", "value": {
+            "call": {"namespace": "Metal.Text", "function": "createSampler",
+            "args": {"device": "device"}}
+        }}
+    },
+    {
+        "let": {"name": "setFragSampSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "setFragmentSamplerState:atIndex:"}}}
+        }}
+    },
+    {
+    "call": {"namespace": "Metal.ObjC", "function": "msgSend1Ptr1Int",
+        "args": {
+        "receiver": "encoder",
+        "selector": "setFragSampSel",
+        "arg0":     "sampler",
+        "arg1":     0
+        }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1Ptr1Int",
+        "args": {
+          "receiver": "encoder",
+          "selector": "setFragTexSel",
+          "arg0":     "texture",
+          "arg1":     0
+        }}
+    },
+
+    {
+      "let": {"name": "drawPrimSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "drawPrimitives:vertexStart:vertexCount:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",    "type": "*void"},
+          {"value": "drawPrimSel","type": "*void"},
+          {"value": 3,            "type": "int"},
+          {"value": 0,            "type": "int"},
+          {"value": 6,            "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "endEncoding",
+        "args": {"encoder": "encoder"}}
+    },
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "presentDrawable",
+        "args": {"commandBuffer": "commandBuffer", "drawable": "drawable"}}
+    },
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "commit",
+        "args": {"commandBuffer": "commandBuffer"}}
+    },
+
+    { "free": "posBuffer" },
+    { "free": "uvBuffer" }
+  ]
+},
+{
+  "name": "createSampler",
+  "params": [{"name": "device", "type": "*void"}],
+  "locals": [
+    {"name": "descClass",      "type": "*void"},
+    {"name": "samplerDesc",    "type": "*void"},
+    {"name": "setMinFilterSel","type": "*void"},
+    {"name": "setMagFilterSel","type": "*void"},
+    {"name": "newSamplerSel",  "type": "*void"},
+    {"name": "sampler",        "type": "*void"}
+  ],
+  "type": "*void",
+  "body": [
+    {
+      "let": {"name": "descClass", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "getClass",
+          "args": {"className": {"string": "MTLSamplerDescriptor"}}}
+      }}
+    },
+    {
+      "let": {"name": "samplerDesc", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "init",
+          "args": {"obj": {
+            "call": {"namespace": "Metal.ObjC", "function": "alloc",
+              "args": {"cls": "descClass"}}
+          }}}
+      }}
+    },
+    {
+      "let": {"name": "setMinFilterSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setMinFilter:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+        "args": {
+          "receiver": "samplerDesc",
+          "selector": "setMinFilterSel",
+          "arg0":     1
+        }}
+    },
+    {
+      "let": {"name": "setMagFilterSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setMagFilter:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+        "args": {
+          "receiver": "samplerDesc",
+          "selector": "setMagFilterSel",
+          "arg0":     1
+        }}
+    },
+    {
+      "let": {"name": "newSamplerSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "newSamplerStateWithDescriptor:"}}}
+      }}
+    },
+    {
+      "let": {"name": "sampler", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+          "args": {
+            "receiver": "device",
+            "selector": "newSamplerSel",
+            "arg0":     "samplerDesc"
+          }}
+      }}
+    },
+    { "return": "sampler" }
+  ]
+}
+  ]
+}

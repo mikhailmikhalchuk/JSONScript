@@ -757,6 +757,14 @@ namespace JSONScript.VM.Graphics.Vulkan
         [DllImport(VulkanLib)]
         public static extern void vkUnmapMemory(IntPtr device, IntPtr memory);
 
+        /// <summary>
+        /// Binds vertex buffers to a command buffer for use in subsequent drawing commands.
+        /// </summary>
+        /// <param name="commandBuffer">The command buffer into which the command is recorded.</param>
+        /// <param name="firstBinding">The index of the first vertex input binding whose state is updated by the command.</param>
+        /// <param name="bindingCount">The number of vertex input bindings whose state is updated by the command.</param>
+        /// <param name="pBuffers">A pointer to an array of buffer handles.</param>
+        /// <param name="pOffsets">A pointer to an array of buffer offsets.</param>
         [DllImport(VulkanLib)]
         public static extern void vkCmdBindVertexBuffers(IntPtr commandBuffer, uint firstBinding, uint bindingCount, ref IntPtr pBuffers, ref ulong pOffsets);
 
@@ -775,6 +783,9 @@ namespace JSONScript.VM.Graphics.Vulkan
         // MoltenVK surface
         [DllImport(VulkanLib)]
         public static extern VkResult vkCreateMacOSSurfaceMVK(IntPtr instance, ref VkMacOSSurfaceCreateInfoMVK pCreateInfo, IntPtr pAllocator, out IntPtr pSurface);
+
+        [DllImport(VulkanLib)]
+        public static extern void vkCmdPushConstants(IntPtr commandBuffer, IntPtr layout, VkShaderStageFlagBits stageFlags, uint offset, uint size, void* pValues);
 
         // Helper
         public static void Check(VkResult result, string message)
@@ -879,6 +890,14 @@ namespace JSONScript.VM.Graphics.Vulkan
         public VkRect2D RenderArea;
         public uint ClearValueCount;
         public VkClearValue* PClearValues;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct VkPushConstantRange
+    {
+        public VkShaderStageFlagBits StageFlags;
+        public uint Offset;
+        public uint Size;
     }
 
     [StructLayout(LayoutKind.Sequential)]

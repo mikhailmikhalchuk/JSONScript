@@ -11,6 +11,14 @@ namespace JSONScript.VM.Graphics.Vulkan
         public IntPtr RenderFinished { get; private set; }
         public IntPtr InFlight { get; private set; }
 
+        struct CirclePush
+        {
+            public float CenterX;
+            public float CenterY;
+            public float Radius;
+            public float Padding; // required
+        }
+
         private readonly VulkanDevice device;
         private readonly VulkanSwapchain swapchain;
         private readonly VulkanPipeline pipeline;
@@ -85,7 +93,7 @@ namespace JSONScript.VM.Graphics.Vulkan
             InFlight = inf;
         }
 
-        public void RecordDraw(uint imageIndex, IntPtr vertexBuffer, uint vertexCount)
+        public void RecordDraw(uint imageIndex, IntPtr vertexBuffer, uint vertexCount, float x = 0, float y = 0, float ndcRadius = 0, float radius = 0)
         {
             // Reset and begin command buffer
             VK.Check(VK.vkResetCommandBuffer(CommandBuffer, 0), "vkResetCommandBuffer");
@@ -151,6 +159,21 @@ namespace JSONScript.VM.Graphics.Vulkan
             // Bind vertex buffer
             ulong offset = 0;
             VK.vkCmdBindVertexBuffers(CommandBuffer, 0, 1, ref vertexBuffer, ref offset);
+
+            CirclePush push;
+            push.CenterX = x;
+            push.CenterY = y;
+            push.Radius = ndcRadius;
+            push.Padding = 0f;
+
+            VK.vkCmdPushConstants(
+                CommandBuffer,
+                pipeline.PipelineLayout,
+                VkShaderStageFlagBits.VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                (uint)sizeof(CirclePush),
+                &push
+            );
 
             // Draw
             VK.vkCmdDraw(CommandBuffer, vertexCount, 1, 0, 0);

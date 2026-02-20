@@ -21,13 +21,15 @@ namespace JSONScript.VM.Graphics.Metal
         }
 
         public void DrawRect(float x, float y, float w, float h, float r, float g, float b) => renderer!.DrawRect(x, y, w, h, r, g, b);
+        public void DrawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, float r, float g, float b) => renderer!.DrawRect(x1, y1, x2, y2, r, g, b);
+        public void DrawCircle(float x, float y, float radius, float r, float g, float b) => renderer!.DrawRect(x, x, x, x, r, g, b);
 
         public void BeginFrame() { }
         public void EndFrame() { }
 
         public void RunLoop() => window!.RunLoop();
 
-        public nint GetLayerPtr() => window!.Layer;
-        public nint GetDevicePtr() => window!.Device;
+        public nint GetLayerPtr()  => window!.Renderer!.LayerPtr;
+        public nint GetDevicePtr() => window!.Renderer!.DevicePtr;
     }
 }

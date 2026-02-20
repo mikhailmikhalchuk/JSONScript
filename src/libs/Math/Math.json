@@ -1,0 +1,249 @@
+{
+  "namespace": "Math",
+  "functions": [
+    {
+      "name": "abs",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fabs",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "sqrt",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "sqrt",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "sin",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "sin",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "cos",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "cos",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "tan",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "tan",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "floor",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "floor",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "ceil",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "ceil",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "pow",
+      "params": [
+        {"name": "x", "type": "float"},
+        {"name": "y", "type": "float"}
+      ],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "pow",
+            "args": [
+              {"value": "x", "type": "float64"},
+              {"value": "y", "type": "float64"}
+            ],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "log",
+      "params": [{"name": "x", "type": "float"}],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "log",
+            "args": [{"value": "x", "type": "float64"}],
+            "returns": "float64",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+        "name": "min",
+        "params": [
+            {"name": "a", "type": "float"},
+            {"name": "b", "type": "float"}
+        ],
+        "locals": [{"name": "result", "type": "float"}],
+        "type": "float",
+        "body": [
+            { "let": {"name": "result", "value": "a"} },
+            {
+            "if": {
+                "condition": {"lt": ["b", "a"]},
+                "then": [
+                { "let": {"name": "result", "value": "b"} }
+                ]
+            }
+            },
+            { "return": "result" }
+        ]
+    },
+    {
+        "name": "max",
+        "params": [
+            {"name": "a", "type": "float"},
+            {"name": "b", "type": "float"}
+        ],
+        "locals": [{"name": "result", "type": "float"}],
+        "type": "float",
+        "body": [
+            { "let": {"name": "result", "value": "a"} },
+            {
+            "if": {
+                "condition": {"gt": ["b", "a"]},
+                "then": [
+                { "let": {"name": "result", "value": "b"} }
+                ]
+            }
+            },
+            { "return": "result" }
+        ]
+    },
+    {
+      "name": "clamp",
+      "params": [
+        {"name": "x",   "type": "float"},
+        {"name": "low", "type": "float"},
+        {"name": "high","type": "float"}
+      ],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "Math", "function": "min",
+              "args": {"a": {
+                "call": {"namespace": "Math", "function": "max",
+                  "args": {"a": "x", "b": "low"}}
+              }, "b": "high"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "pi",
+      "params": [],
+      "locals": [{"name": "result", "type": "float"}],
+      "type": "float",
+      "body": [
+        {
+          "let": {"name": "result", "value": 3.14159265358979323846}
+        },
+        { "return": "result" }
+      ]
+    }
+  ]
+}

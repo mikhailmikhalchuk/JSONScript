@@ -24,11 +24,11 @@ namespace JSONScript.VM.FFI
             var libHandle = LoadLib(lib);
             var fnPtr = NativeLibrary.GetExport(libHandle, symbol);
 
-            nint result = Dispatch(fnPtr, args);
+            nint result = Dispatch(fnPtr, args, returnType);
             return MarshalReturn(returnType, result);
         }
 
-        private static nint Dispatch(nint fnPtr, (string type, Value val)[] args)
+        private static nint Dispatch(nint fnPtr, (string type, Value val)[] args, string returnType)
         {
             //separate args into integer/pointer slots and double slots
             //on ARM64: integer args go in x0-x7, double args go in d0-d7
@@ -73,12 +73,32 @@ namespace JSONScript.VM.FFI
             double d0 = dblArgs[0], d1 = dblArgs[1], d2 = dblArgs[2], d3 = dblArgs[3];
             double d4 = dblArgs[4], d5 = dblArgs[5], d6 = dblArgs[6], d7 = dblArgs[7];
 
+            bool returnsDouble = returnType is "float64" or "double" or "float32" or "float";
+
+            if (returnsDouble)
+            {
+                double dresult = (ic, dc) switch
+                {
+                    (0, 0) => ((delegate* unmanaged<double>)fnPtr)(),
+                    (0, 1) => ((delegate* unmanaged<double, double>)fnPtr)(d0),
+                    (0, 2) => ((delegate* unmanaged<double, double, double>)fnPtr)(d0, d1),
+                    (1, 0) => ((delegate* unmanaged<nint, double>)fnPtr)(i0),
+                    (2, 0) => ((delegate* unmanaged<nint, nint, double>)fnPtr)(i0, i1),
+                    _ => throw new Exception($"FFI: unsupported double-returning arg combination int={ic} double={dc}")
+                };
+                return (nint)BitConverter.DoubleToInt64Bits(dresult);
+            }
+
             //pick the right delegate based on int count and double count
             //format: i{intCount}d{doubleCount}
             return (ic, dc) switch
             {
                 (0, 0) => ((delegate* unmanaged<nint>)fnPtr)(),
+                (0, 1) => ((delegate* unmanaged<double, nint>)fnPtr)(d0),
+                (0, 2) => ((delegate* unmanaged<double, double, nint>)fnPtr)(d0, d1),
                 (1, 0) => ((delegate* unmanaged<nint, nint>)fnPtr)(i0),
+                (1, 2) => ((delegate* unmanaged<nint, double, double, nint>)fnPtr)(i0, d0, d1),
+                (1, 4) => ((delegate* unmanaged<nint, double, double, double, double, nint>)fnPtr)(i0, d0, d1, d2, d3),
                 (2, 0) => ((delegate* unmanaged<nint, nint, nint>)fnPtr)(i0, i1),
                 (3, 0) => ((delegate* unmanaged<nint, nint, nint, nint>)fnPtr)(i0, i1, i2),
                 (4, 0) => ((delegate* unmanaged<nint, nint, nint, nint, nint>)fnPtr)(i0, i1, i2, i3),
@@ -88,7 +108,10 @@ namespace JSONScript.VM.FFI
                 (8, 0) => ((delegate* unmanaged<nint, nint, nint, nint, nint, nint, nint, nint, nint>)fnPtr)(i0, i1, i2, i3, i4, i5, i6, i7),
 
                 // 2 int args (receiver + selector) + doubles (CGRect fields)
-                (2, 1) => ((delegate* unmanaged<nint, nint, double, nint>)fnPtr)(i0, i1, d0),
+                // interleaved: ptr, double, ptr (e.g. CTFontCreateWithName)
+                (2, 1) => argTypes[1] == true  // if double is in the middle
+                    ? ((delegate* unmanaged<nint, double, nint, nint>)fnPtr)(i0, d0, i1)
+                    : ((delegate* unmanaged<nint, nint, double, nint>)fnPtr)(i0, i1, d0),
                 (2, 2) => ((delegate* unmanaged<nint, nint, double, double, nint>)fnPtr)(i0, i1, d0, d1),
                 (2, 3) => ((delegate* unmanaged<nint, nint, double, double, double, nint>)fnPtr)(i0, i1, d0, d1, d2),
                 (2, 4) => ((delegate* unmanaged<nint, nint, double, double, double, double, nint>)fnPtr)(i0, i1, d0, d1, d2, d3),

@@ -1,0 +1,707 @@
+{
+  "namespace": "Metal.MetalPipeline",
+  "functions": [
+    {
+      "name": "createRenderPassDescriptor",
+      "params": [{"name": "texture", "type": "*void"}],
+      "locals": [
+        {"name": "rpdClass",       "type": "*void"},
+        {"name": "rpd",            "type": "*void"},
+        {"name": "colorAttsSel",   "type": "*void"},
+        {"name": "colorAtts",      "type": "*void"},
+        {"name": "atIndexSel",     "type": "*void"},
+        {"name": "colorAtt",       "type": "*void"},
+        {"name": "setTextureSel",  "type": "*void"},
+        {"name": "setLoadActSel",  "type": "*void"},
+        {"name": "setStoreActSel", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "rpdClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+              "args": {"className": {"string": "MTLRenderPassDescriptor"}}}
+          }}
+        },
+        {
+          "let": {"name": "rpd", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+              "args": {
+                "receiver": "rpdClass",
+                "selector": {
+                  "call": {"namespace": "Metal.ObjC", "function": "sel",
+                    "args": {"selectorName": {"string": "renderPassDescriptor"}}}
+                }
+              }}
+          }}
+        },
+        {
+          "let": {"name": "colorAttsSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "colorAttachments"}}}
+          }}
+        },
+        {
+          "let": {"name": "colorAtts", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+              "args": {"receiver": "rpd", "selector": "colorAttsSel"}}
+          }}
+        },
+        {
+          "let": {"name": "atIndexSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "objectAtIndexedSubscript:"}}}
+          }}
+        },
+        {
+        "let": {"name": "colorAtt", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1IntRet",
+            "args": {
+                "receiver": "colorAtts",
+                "selector": "atIndexSel",
+                "arg0":     0
+            }}
+        }}
+        },
+        {
+          "let": {"name": "setTextureSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setTexture:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setTextureSel",
+              "arg0":     "texture"
+            }}
+        },
+        {
+          "let": {"name": "setLoadActSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setLoadAction:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setLoadActSel",
+              "arg0":     2
+            }}
+        },
+        {
+          "let": {"name": "setStoreActSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setStoreAction:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setStoreActSel",
+              "arg0":     1
+            }}
+        },
+        { "return": "rpd" }
+      ]
+    },
+    {
+      "name": "createCommandBuffer",
+      "params": [{"name": "commandQueue", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "commandBuffer"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+              "args": {"receiver": "commandQueue", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "createEncoder",
+      "params": [
+        {"name": "commandBuffer", "type": "*void"},
+        {"name": "rpd",           "type": "*void"}
+      ],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "renderCommandEncoderWithDescriptor:"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+              "args": {
+                "receiver": "commandBuffer",
+                "selector": "sel",
+                "arg0":     "rpd"
+              }}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "endEncoding",
+      "params": [{"name": "encoder", "type": "*void"}],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "endEncoding"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+            "args": {"receiver": "encoder", "selector": "sel"}}
+        }
+      ]
+    },
+    {
+      "name": "presentDrawable",
+      "params": [
+        {"name": "commandBuffer", "type": "*void"},
+        {"name": "drawable",      "type": "*void"}
+      ],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "presentDrawable:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "commandBuffer",
+              "selector": "sel",
+              "arg0":     "drawable"
+            }}
+        }
+      ]
+    },
+    {
+      "name": "commit",
+      "params": [{"name": "commandBuffer", "type": "*void"}],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "commit"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+            "args": {"receiver": "commandBuffer", "selector": "sel"}}
+        }
+      ]
+    },
+    {
+  "name": "getShaderSource",
+  "params": [],
+  "locals": [{"name": "src", "type": "string"}],
+  "type": "string",
+  "body": [
+        {
+    "let": {"name": "src", "value": {"string": "#include <metal_stdlib>\nusing namespace metal;\nstruct VertexOut { float4 position [[position]]; float4 color; };\nvertex VertexOut vertexShader(uint vertexID [[vertex_id]], constant float2* positions [[buffer(0)]], constant float4* colors [[buffer(1)]]) { VertexOut out; out.position = float4(positions[vertexID], 0.0, 1.0); out.color = colors[vertexID]; return out; }\nfragment float4 fragmentShader(VertexOut in [[stage_in]]) { return in.color; }"}}
+    },
+        { "return": "src" }
+    ]
+    },
+    {
+    "name": "compileShaders",
+    "params": [{"name": "device", "type": "*void"}],
+    "locals": [
+        {"name": "src",        "type": "string"},
+        {"name": "srcNS",      "type": "*void"},
+        {"name": "errorPtr",   "type": "*void"},
+        {"name": "library",    "type": "*void"},
+        {"name": "libSel",     "type": "*void"},
+        {"name": "nilOpts", "type" : "*void"},
+        {"name": "errorObj", "type" : "*void"}
+    ],
+    "type": "*void",
+    "body": [
+        { "let": {"name": "nilOpts", "value": null} },
+        {
+        "let": {"name": "src", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "getShaderSource", "args": {}}
+        }}
+        },
+        {
+        "let": {"name": "srcNS", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "nsString",
+            "args": {"str": "src"}}
+        }}
+        },
+        { "alloc": {"size": 8, "into": "errorPtr"} },
+        { "memwrite": {"ptr": "errorPtr", "offset": 0, "value": 0, "type": "int64"} },
+        {
+        "let": {"name": "libSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "newLibraryWithSource:options:error:"}}}
+        }}
+        },
+        {
+        "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+            {"value": "device",   "type": "*void"},
+            {"value": "libSel",   "type": "*void"},
+            {"value": "srcNS",    "type": "*void"},
+            {"value": "nilOpts",  "type": "*void"},
+            {"value": "errorPtr", "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "library"
+        }
+        },
+        {
+        "memread": {
+            "ptr": "errorPtr",
+            "offset": 0,
+            "type": "ptr",
+            "into": "errorObj"
+        }
+        },
+        { "free": "errorPtr" },
+        { "return": "library" }
+    ]
+    },
+    {
+    "name": "getFunctions",
+    "params": [
+        {"name": "library", "type": "*void"},
+        {"name": "device",  "type": "*void"}
+    ],
+    "locals": [
+        {"name": "newFuncSel",  "type": "*void"},
+        {"name": "vertName",    "type": "*void"},
+        {"name": "fragName",    "type": "*void"},
+        {"name": "vertFunc",    "type": "*void"},
+        {"name": "fragFunc",    "type": "*void"}
+    ],
+    "type": "*void",
+    "body": [
+        {
+        "let": {"name": "newFuncSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "newFunctionWithName:"}}}
+        }}
+        },
+        {
+        "let": {"name": "vertName", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "nsString",
+            "args": {"str": {"string": "vertexShader"}}}
+        }}
+        },
+        {
+        "let": {"name": "fragName", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "nsString",
+            "args": {"str": {"string": "fragmentShader"}}}
+        }}
+        },
+        {
+        "let": {"name": "vertFunc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+                "receiver": "library",
+                "selector": "newFuncSel",
+                "arg0":     "vertName"
+            }}
+        }}
+        },
+        {
+        "let": {"name": "fragFunc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+                "receiver": "library",
+                "selector": "newFuncSel",
+                "arg0":     "fragName"
+            }}
+        }}
+        },
+        { "return": "vertFunc" }
+    ]
+    },
+    {
+    "name": "createPipelineState",
+    "params": [{"name": "device", "type": "*void"}, {"name": "library", "type": "*void"}],
+    "locals": [
+        {"name": "newFuncSel",     "type": "*void"},
+        {"name": "vertName",       "type": "*void"},
+        {"name": "fragName",       "type": "*void"},
+        {"name": "vertFunc",       "type": "*void"},
+        {"name": "fragFunc",       "type": "*void"},
+        {"name": "descClass",      "type": "*void"},
+        {"name": "pipelineDesc",   "type": "*void"},
+        {"name": "setVertSel",     "type": "*void"},
+        {"name": "setFragSel",     "type": "*void"},
+        {"name": "colorAttsSel",   "type": "*void"},
+        {"name": "colorAtts",      "type": "*void"},
+        {"name": "atIndexSel",     "type": "*void"},
+        {"name": "colorAtt",       "type": "*void"},
+        {"name": "setPixFmtSel",   "type": "*void"},
+        {"name": "newPipelineSel", "type": "*void"},
+        {"name": "errorPtr",       "type": "*void"},
+        {"name": "pipelineState",  "type": "*void"},
+        {"name": "nilOpts",        "type": "*void"}
+    ],
+    "type": "*void",
+    "body": [
+        { "let": {"name": "nilOpts", "value": null} },
+        {
+        "let": {"name": "newFuncSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "newFunctionWithName:"}}}
+        }}
+        },
+        {
+        "let": {"name": "vertName", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "nsString",
+            "args": {"str": {"string": "vertexShader"}}}
+        }}
+        },
+        {
+        "let": {"name": "fragName", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "nsString",
+            "args": {"str": {"string": "fragmentShader"}}}
+        }}
+        },
+        {
+        "let": {"name": "vertFunc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {"receiver": "library", "selector": "newFuncSel", "arg0": "vertName"}}
+        }}
+        },
+        {
+        "let": {"name": "fragFunc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {"receiver": "library", "selector": "newFuncSel", "arg0": "fragName"}}
+        }}
+        },
+        {
+        "let": {"name": "descClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+            "args": {"className": {"string": "MTLRenderPipelineDescriptor"}}}
+        }}
+        },
+        {
+        "let": {"name": "pipelineDesc", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "init",
+            "args": {"obj": {
+                "call": {"namespace": "Metal.ObjC", "function": "alloc",
+                "args": {"cls": "descClass"}}
+            }}}
+        }}
+        },
+        {
+        "let": {"name": "setVertSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "setVertexFunction:"}}}
+        }}
+        },
+        {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {"receiver": "pipelineDesc", "selector": "setVertSel", "arg0": "vertFunc"}}
+        },
+        {
+        "let": {"name": "setFragSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "setFragmentFunction:"}}}
+        }}
+        },
+        {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {"receiver": "pipelineDesc", "selector": "setFragSel", "arg0": "fragFunc"}}
+        },
+        {
+        "let": {"name": "colorAttsSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "colorAttachments"}}}
+        }}
+        },
+        {
+        "let": {"name": "colorAtts", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+            "args": {"receiver": "pipelineDesc", "selector": "colorAttsSel"}}
+        }}
+        },
+        {
+        "let": {"name": "atIndexSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "objectAtIndexedSubscript:"}}}
+        }}
+        },
+        {
+        "let": {"name": "colorAtt", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1IntRet",
+            "args": {"receiver": "colorAtts", "selector": "atIndexSel", "arg0": 0}}
+        }}
+        },
+        {
+        "let": {"name": "setPixFmtSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "setPixelFormat:"}}}
+        }}
+        },
+        {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+            "args": {"receiver": "colorAtt", "selector": "setPixFmtSel", "arg0": 80}}
+        },
+        { "alloc": {"size": 8, "into": "errorPtr"} },
+        { "memwrite": {"ptr": "errorPtr", "offset": 0, "value": 0, "type": "int64"} },
+        {
+        "let": {"name": "newPipelineSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "newRenderPipelineStateWithDescriptor:error:"}}}
+        }}
+        },
+        {
+        "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+            {"value": "device",       "type": "*void"},
+            {"value": "newPipelineSel","type": "*void"},
+            {"value": "pipelineDesc", "type": "*void"},
+            {"value": "errorPtr",     "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "pipelineState"
+        }
+        },
+        { "free": "errorPtr" },
+        { "return": "pipelineState" }
+    ]
+    },
+    {
+  "name": "getTextShaderSource",
+  "params": [],
+  "locals": [{"name": "src", "type": "string"}],
+  "type": "string",
+  "body": [
+    {
+      "let": {"name": "src", "value": {"string": "#include <metal_stdlib>\nusing namespace metal;\nstruct TextVertexOut { float4 position [[position]]; float2 uv; };\nvertex TextVertexOut textVertex(uint vid [[vertex_id]], constant float2* positions [[buffer(0)]], constant float2* uvs [[buffer(1)]]) { TextVertexOut out; out.position = float4(positions[vid], 0.0, 1.0); out.uv = uvs[vid]; return out; }\nfragment float4 textFragment(TextVertexOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler samp [[sampler(0)]]) { return tex.sample(samp, in.uv); }"}}
+    },
+    { "return": "src" }
+  ]
+},
+{
+  "name": "createTextPipelineState",
+  "params": [{"name": "device", "type": "*void"}],
+  "locals": [
+    {"name": "src",            "type": "string"},
+    {"name": "srcNS",          "type": "*void"},
+    {"name": "library",        "type": "*void"},
+    {"name": "libSel",         "type": "*void"},
+    {"name": "newFuncSel",     "type": "*void"},
+    {"name": "vertName",       "type": "*void"},
+    {"name": "fragName",       "type": "*void"},
+    {"name": "vertFunc",       "type": "*void"},
+    {"name": "fragFunc",       "type": "*void"},
+    {"name": "descClass",      "type": "*void"},
+    {"name": "pipelineDesc",   "type": "*void"},
+    {"name": "setVertSel",     "type": "*void"},
+    {"name": "setFragSel",     "type": "*void"},
+    {"name": "colorAttsSel",   "type": "*void"},
+    {"name": "colorAtts",      "type": "*void"},
+    {"name": "atIndexSel",     "type": "*void"},
+    {"name": "colorAtt",       "type": "*void"},
+    {"name": "setPixFmtSel",   "type": "*void"},
+    {"name": "newPipelineSel", "type": "*void"},
+    {"name": "errorPtr",       "type": "*void"},
+    {"name": "pipelineState",  "type": "*void"},
+    {"name": "nilOpts",        "type": "*void"}
+  ],
+  "type": "*void",
+  "body": [
+    { "let": {"name": "nilOpts", "value": null} },
+    {
+      "let": {"name": "src", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "getTextShaderSource", "args": {}}
+      }}
+    },
+    {
+      "let": {"name": "srcNS", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "nsString",
+          "args": {"str": "src"}}
+      }}
+    },
+    { "alloc": {"size": 8, "into": "errorPtr"} },
+    { "memwrite": {"ptr": "errorPtr", "offset": 0, "value": 0, "type": "int64"} },
+    {
+      "let": {"name": "libSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "newLibraryWithSource:options:error:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "device",   "type": "*void"},
+          {"value": "libSel",   "type": "*void"},
+          {"value": "srcNS",    "type": "*void"},
+          {"value": "nilOpts",  "type": "*void"},
+          {"value": "errorPtr", "type": "*void"}
+        ],
+        "returns": "*void",
+        "into": "library"
+      }
+    },
+    { "free": "errorPtr" },
+    {
+      "let": {"name": "newFuncSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "newFunctionWithName:"}}}
+      }}
+    },
+    {
+      "let": {"name": "vertName", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "nsString",
+          "args": {"str": {"string": "textVertex"}}}
+      }}
+    },
+    {
+      "let": {"name": "fragName", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "nsString",
+          "args": {"str": {"string": "textFragment"}}}
+      }}
+    },
+    {
+      "let": {"name": "vertFunc", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+          "args": {"receiver": "library", "selector": "newFuncSel", "arg0": "vertName"}}
+      }}
+    },
+    {
+      "let": {"name": "fragFunc", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+          "args": {"receiver": "library", "selector": "newFuncSel", "arg0": "fragName"}}
+      }}
+    },
+    {
+      "let": {"name": "descClass", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "getClass",
+          "args": {"className": {"string": "MTLRenderPipelineDescriptor"}}}
+      }}
+    },
+    {
+      "let": {"name": "pipelineDesc", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "init",
+          "args": {"obj": {
+            "call": {"namespace": "Metal.ObjC", "function": "alloc",
+              "args": {"cls": "descClass"}}
+          }}}
+      }}
+    },
+    {
+      "let": {"name": "setVertSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setVertexFunction:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+        "args": {"receiver": "pipelineDesc", "selector": "setVertSel", "arg0": "vertFunc"}}
+    },
+    {
+      "let": {"name": "setFragSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setFragmentFunction:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+        "args": {"receiver": "pipelineDesc", "selector": "setFragSel", "arg0": "fragFunc"}}
+    },
+    {
+      "let": {"name": "colorAttsSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "colorAttachments"}}}
+      }}
+    },
+    {
+      "let": {"name": "colorAtts", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+          "args": {"receiver": "pipelineDesc", "selector": "colorAttsSel"}}
+      }}
+    },
+    {
+      "let": {"name": "atIndexSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "objectAtIndexedSubscript:"}}}
+      }}
+    },
+    {
+      "let": {"name": "colorAtt", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1IntRet",
+          "args": {"receiver": "colorAtts", "selector": "atIndexSel", "arg0": 0}}
+      }}
+    },
+    {
+      "let": {"name": "setPixFmtSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setPixelFormat:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+        "args": {"receiver": "colorAtt", "selector": "setPixFmtSel", "arg0": 80}}
+    },
+    { "alloc": {"size": 8, "into": "errorPtr"} },
+    { "memwrite": {"ptr": "errorPtr", "offset": 0, "value": 0, "type": "int64"} },
+    {
+      "let": {"name": "newPipelineSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "newRenderPipelineStateWithDescriptor:error:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "device",        "type": "*void"},
+          {"value": "newPipelineSel","type": "*void"},
+          {"value": "pipelineDesc",  "type": "*void"},
+          {"value": "errorPtr",      "type": "*void"}
+        ],
+        "returns": "*void",
+        "into": "pipelineState"
+      }
+    },
+    { "free": "errorPtr" },
+    { "return": "pipelineState" }
+  ]
+}
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "namespace": "FileSystem.FileWriter",
+  "functions": [
+    {
+      "name": "open",
+      "params": [{"name": "path", "type": "string"}],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fopen",
+            "args": [
+              {"value": "path", "type": "string"},
+              {"value": {"string": "wb"}, "type": "string"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "openAppend",
+      "params": [{"name": "path", "type": "string"}],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fopen",
+            "args": [
+              {"value": "path", "type": "string"},
+              {"value": {"string": "ab"}, "type": "string"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "writeString",
+      "params": [
+        {"name": "file", "type": "*void"},
+        {"name": "content", "type": "string"}
+      ],
+      "locals": [{"name": "bytesWritten", "type": "int"}],
+      "type": "int",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fputs",
+            "args": [
+              {"value": "content", "type": "string"},
+              {"value": "file", "type": "*void"}
+            ],
+            "returns": "int",
+            "into": "bytesWritten"
+          }
+        },
+        { "return": "bytesWritten" }
+      ]
+    },
+    {
+      "name": "writeLine",
+      "params": [
+        {"name": "file", "type": "*void"},
+        {"name": "content", "type": "string"}
+      ],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fputs",
+            "args": [
+              {"value": "content", "type": "string"},
+              {"value": "file", "type": "*void"}
+            ],
+            "returns": "void"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fputs",
+            "args": [
+              {"value": {"string": "\n"}, "type": "string"},
+              {"value": "file", "type": "*void"}
+            ],
+            "returns": "void"
+          }
+        }
+      ]
+    },
+    {
+      "name": "flush",
+      "params": [{"name": "file", "type": "*void"}],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fflush",
+            "args": [{"value": "file", "type": "*void"}],
+            "returns": "void"
+          }
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "params": [{"name": "file", "type": "*void"}],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libSystem.dylib",
+            "symbol": "fclose",
+            "args": [{"value": "file", "type": "*void"}],
+            "returns": "void"
+          }
+        }
+      ]
+    },
+    {
+      "name": "writeFile",
+      "params": [
+        {"name": "path",    "type": "string"},
+        {"name": "content", "type": "string"}
+      ],
+      "locals": [{"name": "file", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "file", "value": {
+            "call": {"namespace": "FileSystem.FileWriter", "function": "open",
+              "args": {"path": "path"}}
+          }}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "writeString",
+            "args": {"file": "file", "content": "content"}}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "flush",
+            "args": {"file": "file"}}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "close",
+            "args": {"file": "file"}}
+        }
+      ]
+    },
+    {
+      "name": "appendFile",
+      "params": [
+        {"name": "path",    "type": "string"},
+        {"name": "content", "type": "string"}
+      ],
+      "locals": [{"name": "file", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "file", "value": {
+            "call": {"namespace": "FileSystem.FileWriter", "function": "openAppend",
+              "args": {"path": "path"}}
+          }}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "writeString",
+            "args": {"file": "file", "content": "content"}}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "flush",
+            "args": {"file": "file"}}
+        },
+        {
+          "call": {"namespace": "FileSystem.FileWriter", "function": "close",
+            "args": {"file": "file"}}
+        }
+      ]
+    }
+  ]
+}

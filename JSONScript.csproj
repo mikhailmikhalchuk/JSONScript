@@ -21,6 +21,14 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         <TargetPath>Shaders\frag.spv</TargetPath>
     </None>
+    <None Update="src\VM\Graphics\Vulkan\Shaders\circle.frag.spv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <TargetPath>Shaders\circle.frag.spv</TargetPath>
+    </None>
+    <None Update="src\VM\Graphics\Vulkan\Shaders\circle.vert.spv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <TargetPath>Shaders\circle.vert.spv</TargetPath>
+    </None>
 </ItemGroup>
 
 </Project>

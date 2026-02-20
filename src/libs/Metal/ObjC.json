@@ -1,5 +1,5 @@
 {
-  "namespace": "ObjC",
+  "namespace": "Metal.ObjC",
   "functions": [
     {
       "name": "getClass",
@@ -334,6 +334,89 @@
         },
         { "return": "result" }
       ]
+    },
+    {
+  "name": "msgSend3",
+  "params": [
+    {"name": "receiver", "type": "*void"},
+    {"name": "selector", "type": "*void"},
+    {"name": "arg0",     "type": "*void"},
+    {"name": "arg1",     "type": "*void"},
+    {"name": "arg2",     "type": "*void"}
+  ],
+  "locals": [{"name": "result", "type": "*void"}],
+  "type": "*void",
+  "body": [
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "receiver", "type": "*void"},
+          {"value": "selector", "type": "*void"},
+          {"value": "arg0",     "type": "*void"},
+          {"value": "arg1",     "type": "*void"},
+          {"value": "arg2",     "type": "*void"}
+        ],
+        "returns": "*void",
+        "into": "result"
+      }
+    },
+    { "return": "result" }
+  ]
+},
+{
+  "name": "msgSend2Int",
+  "params": [
+    {"name": "receiver", "type": "*void"},
+    {"name": "selector", "type": "*void"},
+    {"name": "arg0",     "type": "int"},
+    {"name": "arg1",     "type": "int"}
+  ],
+  "locals": [],
+  "body": [
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "receiver", "type": "*void"},
+          {"value": "selector", "type": "*void"},
+          {"value": "arg0",     "type": "int"},
+          {"value": "arg1",     "type": "int"}
+        ],
+        "returns": "void"
+      }
     }
+  ]
+},
+{
+  "name": "msgSend1Ptr1Int",
+  "params": [
+    {"name": "receiver", "type": "*void"},
+    {"name": "selector", "type": "*void"},
+    {"name": "arg0",     "type": "*void"},
+    {"name": "arg1",     "type": "int"}
+  ],
+  "locals": [{"name": "result", "type": "*void"}],
+  "type": "*void",
+  "body": [
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "receiver", "type": "*void"},
+          {"value": "selector", "type": "*void"},
+          {"value": "arg0",     "type": "*void"},
+          {"value": "arg1",     "type": "int"}
+        ],
+        "returns": "*void",
+        "into": "result"
+      }
+    },
+    { "return": "result" }
+  ]
+}
   ]
 }

@@ -120,7 +120,7 @@ namespace JSONScript.VM
                             args[i] = Pop();
 
                         // Native namespace intercept
-                        if (funcName.StartsWith("Gfx."))
+                        if (funcName.StartsWith("Gfx.") || funcName.StartsWith("Sys."))
                         {
                             ExecuteNative(funcName, args);
                             break;
@@ -553,7 +553,9 @@ namespace JSONScript.VM
                 return new Value(a.ToString() + b.ToString());
 
             if (a.Type == JSType.FLOAT || b.Type == JSType.FLOAT)
+            {
                 return new Value(a.AsDouble + b.AsDouble);
+            }
 
             if (a.Type == JSType.STRING && b.Type == JSType.INT)
                 return new Value(a.ToString() + b.AsInt);
@@ -595,6 +597,95 @@ namespace JSONScript.VM
                     float b = (float)args[6].AsDouble;
 
                     backend.DrawRect(x, y, w, h, r, g, b);
+                    break;
+                }
+
+                case "Gfx.DrawTriangle":
+                {
+                    if (backend == null)
+                        throw new Exception("Gfx.DrawTriangle called but graphics mode is not enabled");
+
+                    float x1 = (float)args[0].AsDouble;
+                    float y1 = (float)args[1].AsDouble;
+                    float x2 = (float)args[2].AsDouble;
+                    float y2 = (float)args[3].AsDouble;
+                    float x3 = (float)args[4].AsDouble;
+                    float y3 = (float)args[5].AsDouble;
+                    float r = (float)args[6].AsDouble;
+                    float g = (float)args[7].AsDouble;
+                    float b = (float)args[8].AsDouble;
+
+                    backend.DrawTriangle(x1, y1, x2, y2, x3, y3, r, g, b);
+                    break;
+                }
+
+                case "Gfx.DrawCircle":
+                {
+                    if (backend == null)
+                        throw new Exception("Gfx.DrawCircle called but graphics mode is not enabled");
+
+                    float x = (float)args[0].AsDouble;
+                    float y = (float)args[1].AsDouble;
+                    float radius = (float)args[2].AsDouble;
+                    float r = (float)args[3].AsDouble;
+                    float g = (float)args[4].AsDouble;
+                    float b = (float)args[5].AsDouble;
+
+                    backend.DrawCircle(x, y, radius, r, g, b);
+                    break;
+                }
+
+                case "Sys.PtrToString":
+                {
+                    nint ptr = args[0].PointerValue;
+                    int  len = (int)args[1].AsInt;
+                    string str = Marshal.PtrToStringAnsi(ptr, len);
+                    stack.Add(new Value(str));
+                    break;
+                }
+
+                case "Sys.ReplaceRegion":
+                {
+                    nint texture      = args[0].PointerValue;
+                    nint buffer       = args[1].PointerValue;
+                    ulong width       = (ulong)args[2].AsInt;
+                    ulong height      = (ulong)args[3].AsInt;
+                    ulong bytesPerRow = width * 4;
+
+                    var libobjc = NativeLibrary.Load("/usr/lib/libobjc.dylib");
+                    
+                    var selRegisterName = NativeLibrary.GetExport(libobjc, "sel_registerName");
+                    var selPtr = Marshal.StringToHGlobalAnsi("replaceRegion:mipmapLevel:withBytes:bytesPerRow:");
+                    
+                    nint sel;
+                    unsafe
+                    {
+                        sel = ((delegate* unmanaged<nint, nint>)selRegisterName)(selPtr);
+                    }
+                    
+                    Marshal.FreeHGlobal(selPtr);
+
+                    var region = new MTLRegion
+                    {
+                        OriginX = 0, OriginY = 0, OriginZ = 0,
+                        Width   = width, Height = height, Depth = 1
+                    };
+
+                    ObjCBindings.ReplaceRegion(texture, sel, region, 0, buffer, bytesPerRow);
+                    break;
+                }
+
+                case "Sys.GetSymbolPtr":
+                {
+                    string lib    = args[0].StringValue!;
+                    string symbol = args[1].StringValue!;
+
+                    var handle = NativeLibrary.Load(lib);
+                    var ptr    = NativeLibrary.GetExport(handle, symbol);
+
+                    // It's a pointer to the value, so dereference it
+                    nint value = Marshal.ReadIntPtr(ptr);
+                    stack.Add(new Value(value, "void"));
                     break;
                 }
 
@@ -660,5 +751,24 @@ namespace JSONScript.VM
         }
 
         private Value DivideValues(Value a, Value b) => new Value(a.AsDouble / b.AsDouble);
+    }
+
+    internal static class ObjCBindings
+    {
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        public static extern void ReplaceRegion(
+            IntPtr receiver,
+            IntPtr selector,
+            MTLRegion region,
+            ulong mipmapLevel,
+            IntPtr bytes,
+            ulong bytesPerRow);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MTLRegion
+    {
+        public ulong OriginX, OriginY, OriginZ;
+        public ulong Width, Height, Depth;
     }
 }

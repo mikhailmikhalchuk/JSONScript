@@ -1,0 +1,368 @@
+{
+  "namespace": "Metal.AppKit",
+  "functions": [
+            {
+        "name": "createWindow",
+        "params": [
+            {"name": "width",  "type": "int"},
+            {"name": "height", "type": "int"}
+        ],
+        "locals": [
+            {"name": "nsAppClass",    "type": "*void"},
+            {"name": "sharedAppSel", "type": "*void"},
+            {"name": "nsApp",         "type": "*void"},
+            {"name": "setActPolSel",  "type": "*void"},
+            {"name": "nsWindowClass", "type": "*void"},
+            {"name": "allocSel",      "type": "*void"},
+            {"name": "windowAlloc",   "type": "*void"},
+            {"name": "initSel",       "type": "*void"},
+            {"name": "window",        "type": "*void"},
+            {"name": "makeKeySel",    "type": "*void"},
+            {"name": "finishLaunchingSel",    "type": "*void"}
+        ],
+        "type": "*void",
+        "body": [
+            {
+            "let": {"name": "nsAppClass", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "getClass",
+                "args": {"className": {"string": "NSApplication"}}}
+            }}
+            },
+            {
+            "let": {"name": "sharedAppSel", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                "args": {"selectorName": {"string": "sharedApplication"}}}
+            }}
+            },
+            {
+            "let": {"name": "nsApp", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+                "args": {"receiver": "nsAppClass", "selector": "sharedAppSel"}}
+            }}
+            },
+            {
+            "let": {"name": "setActPolSel", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                "args": {"selectorName": {"string": "setActivationPolicy:"}}}
+            }}
+            },
+            {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
+                "args": {
+                "receiver": "nsApp",
+                "selector": "setActPolSel",
+                "arg0":     0
+                }}
+            },
+            {
+            "let": {"name": "nsWindowClass", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "getClass",
+                "args": {"className": {"string": "NSWindow"}}}
+            }}
+            },
+            {
+            "let": {"name": "allocSel", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                "args": {"selectorName": {"string": "alloc"}}}
+            }}
+            },
+            {
+            "let": {"name": "windowAlloc", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+                "args": {"receiver": "nsWindowClass", "selector": "allocSel"}}
+            }}
+            },
+            {
+            "let": {"name": "initSel", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                "args": {"selectorName": {"string": "initWithContentRect:styleMask:backing:defer:"}}}
+            }}
+            },
+            {
+            "let": {"name": "window", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "msgSendRect",
+                "args": {
+                    "receiver":  "windowAlloc",
+                    "selector":  "initSel",
+                    "x":         0.0,
+                    "y":         0.0,
+                    "w":         800.0,
+                    "h":         600.0,
+                    "styleMask": 15,
+                    "backing":   2,
+                    "defer":     false
+                }}
+            }}
+            },
+            {
+            "let": {"name": "makeKeySel", "value": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                "args": {"selectorName": {"string": "makeKeyAndOrderFront:"}}}
+            }}
+            },
+            {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+                "args": {
+                "receiver": "window",
+                "selector": "makeKeySel",
+                "arg0":     "nsApp"
+                }}
+            },
+            { "return": "window" }
+        ]
+        },
+    {
+      "name": "getContentView",
+      "params": [{"name": "window", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "contentView"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+              "args": {"receiver": "window", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "attachLayer",
+      "params": [
+        {"name": "view",  "type": "*void"},
+        {"name": "layer", "type": "*void"}
+      ],
+      "locals": [
+        {"name": "setWantsLayerSel", "type": "*void"},
+        {"name": "setLayerSel",      "type": "*void"}
+      ],
+      "body": [
+        {
+          "let": {"name": "setWantsLayerSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setWantsLayer:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Bool",
+            "args": {
+              "receiver": "view",
+              "selector": "setWantsLayerSel",
+              "arg0":     true
+            }}
+        },
+        {
+          "let": {"name": "setLayerSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setLayer:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "view",
+              "selector": "setLayerSel",
+              "arg0":     "layer"
+            }}
+        }
+      ]
+    },
+    {
+    "name": "isVisible",
+    "params": [{"name": "window", "type": "*void"}],
+    "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"},
+        {"name": "boolResult", "type": "bool"}
+    ],
+    "type": "bool",
+    "body": [
+        {
+        "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "isVisible"}}}
+        }}
+        },
+        {
+        "let": {"name": "result", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+            "args": {"receiver": "window", "selector": "sel"}}
+        }}
+        },
+        {
+        "let": {"name": "boolResult", "value": {
+            "not": {"eq": ["result", 0]}
+        }}
+        },
+        { "return": "boolResult" }
+    ]
+    },
+    {
+    "name": "nextEvent",
+    "params": [{"name": "nsApp", "type": "*void"}],
+    "locals": [
+        {"name": "sel",         "type": "*void"},
+        {"name": "distantPast", "type": "*void"},
+        {"name": "nsDateClass", "type": "*void"},
+        {"name": "modeSel",     "type": "*void"},
+        {"name": "nsStrClass",  "type": "*void"},
+        {"name": "utf8Sel",     "type": "*void"},
+        {"name": "modeStr",     "type": "*void"},
+        {"name": "result",      "type": "*void"}
+    ],
+    "type": "*void",
+    "body": [
+        {
+        "let": {"name": "nsDateClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+            "args": {"className": {"string": "NSDate"}}}
+        }}
+        },
+        {
+        "let": {"name": "distantPast", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+            "args": {
+                "receiver": "nsDateClass",
+                "selector": {
+                "call": {"namespace": "Metal.ObjC", "function": "sel",
+                    "args": {"selectorName": {"string": "distantPast"}}}
+                }
+            }}
+        }}
+        },
+        {
+        "let": {"name": "nsStrClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+            "args": {"className": {"string": "NSString"}}}
+        }}
+        },
+        {
+        "let": {"name": "utf8Sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "stringWithUTF8String:"}}}
+        }}
+        },
+        {
+        "let": {"name": "modeStr", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+                "receiver": "nsStrClass",
+                "selector": "utf8Sel",
+                "arg0": {
+                "call": {"namespace": "Metal.ObjC", "function": "nsString",
+                    "args": {"str": {"string": "kCFRunLoopDefaultMode"}}}
+                }
+            }}
+        }}
+        },
+        {
+        "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "nextEventMatchingMask:untilDate:inMode:dequeue:"}}}
+        }}
+        },
+        {
+        "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+            {"value": "nsApp",       "type": "*void"},
+            {"value": "sel",         "type": "*void"},
+            {"value": -1,            "type": "uint"},
+            {"value": "distantPast", "type": "*void"},
+            {"value": "modeStr",     "type": "*void"},
+            {"value": 1,             "type": "int"}
+            ],
+            "returns": "*void",
+            "into": "result"
+        }
+        },
+        { "return": "result" }
+    ]
+    },
+    {
+    "name": "sendEvent",
+    "params": [
+        {"name": "nsApp", "type": "*void"},
+        {"name": "evt",   "type": "*void"}
+    ],
+    "locals": [{"name": "sel", "type": "*void"}],
+    "body": [
+        {
+        "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "sendEvent:"}}}
+        }}
+        },
+        {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+            "args": {
+            "receiver": "nsApp",
+            "selector": "sel",
+            "arg0":     "evt"
+            }}
+        }
+    ]
+    },
+    {
+    "name": "activate",
+    "params": [{"name": "nsApp", "type": "*void"}],
+    "locals": [{"name": "sel", "type": "*void"}],
+    "body": [
+        {
+        "let": {"name": "sel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+            "args": {"selectorName": {"string": "activateIgnoringOtherApps:"}}}
+        }}
+        },
+        {
+        "call": {"namespace": "Metal.ObjC", "function": "msgSend1Bool",
+            "args": {
+            "receiver": "nsApp",
+            "selector": "sel",
+            "arg0":     true
+            }}
+        }
+    ]
+    },
+    {
+  "name": "runLoopStep",
+  "params": [],
+  "locals": [
+    {"name": "kCFRunLoopDefaultMode", "type": "*void"}
+  ],
+  "body": [
+    {
+      "let": {"name": "kCFRunLoopDefaultMode", "value": {
+        "call": {"namespace": "Sys", "function": "GetSymbolPtr",
+          "args": {
+            "lib":    {"string": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"},
+            "symbol": {"string": "kCFRunLoopDefaultMode"}
+          }}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
+        "symbol": "CFRunLoopRunInMode",
+        "args": [
+          {"value": "kCFRunLoopDefaultMode", "type": "*void"},
+          {"value": 0.016,                   "type": "float64"},
+          {"value": 1,                        "type": "int"}
+        ],
+        "returns": "void"
+      }
+    }
+  ]
+}
+  ]
+}

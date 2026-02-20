@@ -125,7 +125,7 @@ namespace JSONScript
         static Dictionary<string, CompiledFunction> CompilePath(string path)
         {
             var compiler = new Compiler.Compiler();
-            var files = Directory.Exists(path) ? Directory.GetFiles(path, "*.json", SearchOption.AllDirectories).ToList() : new List<string> { path };
+            var files = Directory.Exists(path) ? Directory.GetFiles(path, "*.json", SearchOption.AllDirectories).Concat(Directory.GetFiles(path, "*.jsonc", SearchOption.AllDirectories)).ToList() : new List<string> { path };
 
             compiler.RegisterNativeNamespaces();
 

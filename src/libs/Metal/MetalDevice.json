@@ -1,5 +1,5 @@
 {
-  "namespace": "MetalDevice",
+  "namespace": "Metal.MetalDevice",
   "functions": [
     {
       "name": "create",
@@ -30,13 +30,13 @@
       "body": [
         {
           "let": {"name": "sel", "value": {
-            "call": {"namespace": "ObjC", "function": "sel",
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
               "args": {"selectorName": {"string": "newCommandQueue"}}}
           }}
         },
         {
           "let": {"name": "result", "value": {
-            "call": {"namespace": "ObjC", "function": "msgSend0",
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
               "args": {"receiver": "device", "selector": "sel"}}
           }}
         },

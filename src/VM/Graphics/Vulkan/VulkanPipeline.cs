@@ -88,6 +88,13 @@ namespace JSONScript.VM.Graphics.Vulkan
 
         private void CreatePipelineLayout()
         {
+            VkPushConstantRange pushRange = new VkPushConstantRange
+            {
+                StageFlags = VkShaderStageFlagBits.VK_SHADER_STAGE_FRAGMENT_BIT,
+                Offset = 0,
+                Size = 16
+            };
+
             var createInfo = new VkPipelineLayoutCreateInfo
             {
                 SType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -95,8 +102,8 @@ namespace JSONScript.VM.Graphics.Vulkan
                 Flags = 0,
                 SetLayoutCount = 0,
                 PSetLayouts = IntPtr.Zero,
-                PushConstantRangeCount = 0,
-                PPushConstantRanges = IntPtr.Zero
+                PushConstantRangeCount = 1,
+                PPushConstantRanges = (nint)(&pushRange)
             };
 
             VK.Check(VK.vkCreatePipelineLayout(device.Device, ref createInfo, IntPtr.Zero, out var layout), "vkCreatePipelineLayout");
@@ -108,9 +115,13 @@ namespace JSONScript.VM.Graphics.Vulkan
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             byte[] vertCode = File.ReadAllBytes(Path.Combine(basePath, "Shaders", "vert.spv"));
             byte[] fragCode = File.ReadAllBytes(Path.Combine(basePath, "Shaders", "frag.spv"));
+            byte[] circleVertCode = File.ReadAllBytes(Path.Combine(basePath, "Shaders", "circle.vert.spv"));
+            byte[] circleFragCode = File.ReadAllBytes(Path.Combine(basePath, "Shaders", "circle.frag.spv"));
 
             IntPtr vertModule = CreateShaderModule(vertCode);
             IntPtr fragModule = CreateShaderModule(fragCode);
+            IntPtr circleVertModule = CreateShaderModule(circleVertCode);
+            IntPtr circleFragModule = CreateShaderModule(circleFragCode);
 
             var entryPoint = Marshal.StringToHGlobalAnsi("main");
 
@@ -121,7 +132,7 @@ namespace JSONScript.VM.Graphics.Vulkan
                 PNext = IntPtr.Zero,
                 Flags = 0,
                 Stage = VkShaderStageFlagBits.VK_SHADER_STAGE_VERTEX_BIT,
-                Module = vertModule,
+                Module = circleVertModule,
                 PName = entryPoint,
                 PSpecializationInfo = IntPtr.Zero
             };
@@ -131,7 +142,7 @@ namespace JSONScript.VM.Graphics.Vulkan
                 PNext = IntPtr.Zero,
                 Flags = 0,
                 Stage = VkShaderStageFlagBits.VK_SHADER_STAGE_FRAGMENT_BIT,
-                Module = fragModule,
+                Module = circleFragModule,
                 PName = entryPoint,
                 PSpecializationInfo = IntPtr.Zero
             };
@@ -180,7 +191,7 @@ namespace JSONScript.VM.Graphics.Vulkan
             VkVertexInputBindingDescription* pBindingDesc = &bindingDesc;
             VkPipelineColorBlendAttachmentState* pColorBlend = &colorBlendAttachment;
 
-            fixed (VkPipelineShaderStageCreateInfo*   pStages = shaderStages)
+            fixed (VkPipelineShaderStageCreateInfo* pStages = shaderStages)
             fixed (VkVertexInputAttributeDescription* pAttrDescs = attrDescs)
             fixed (VkDynamicState* pDynamicStates = dynamicStates)
             {
@@ -222,7 +233,7 @@ namespace JSONScript.VM.Graphics.Vulkan
                     Flags = 0,
                     DepthClampEnable = 0,
                     RasterizerDiscardEnable = 0,
-                    PolygonMode  = VkPolygonMode.VK_POLYGON_MODE_FILL,
+                    PolygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
                     CullMode = (uint)VkCullModeFlagBits.VK_CULL_MODE_NONE,
                     FrontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
                     DepthBiasEnable = 0,
@@ -267,7 +278,7 @@ namespace JSONScript.VM.Graphics.Vulkan
 
                 // Take addresses of locals — valid since we're in unsafe context
                 VkPipelineVertexInputStateCreateInfo* pVI = &vertexInput;
-                VkPipelineInputAssemblyStateCreateInfo* pIA  = &inputAssembly;
+                VkPipelineInputAssemblyStateCreateInfo* pIA = &inputAssembly;
                 VkPipelineViewportStateCreateInfo* pVP = &viewportState;
                 VkPipelineRasterizationStateCreateInfo* pRS = &rasterizer;
                 VkPipelineMultisampleStateCreateInfo* pMS = &multisampling;
@@ -293,7 +304,7 @@ namespace JSONScript.VM.Graphics.Vulkan
                     Layout = PipelineLayout,
                     RenderPass = RenderPass,
                     Subpass = 0,
-                    BasePipelineHandle  = IntPtr.Zero,
+                    BasePipelineHandle = IntPtr.Zero,
                     BasePipelineIndex = -1
                 };
 

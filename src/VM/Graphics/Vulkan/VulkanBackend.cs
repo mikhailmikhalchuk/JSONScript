@@ -171,6 +171,93 @@ namespace JSONScript.VM.Graphics.Vulkan
             commands.Present(imageIndex);
         }
 
+        public void DrawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, float r, float g, float b)
+        {
+            Console.WriteLine(x1);
+            Console.WriteLine(y1);
+            Console.WriteLine(x2);
+            Console.WriteLine(y2);
+            Console.WriteLine(x3);
+            Console.WriteLine(y3);
+            //Convert pixel coords to NDC (-1 to 1)
+            float ndcX1 = (x1 / width) - 1f ;
+            float ndcY1 = (y1 / height) - 1f ;
+            float ndcX2 = (x2 / width) - 1f ;
+            float ndcY2 = (y2 / height) - 1f ;
+            float ndcX3 = (x3 / width) - 1f ;
+            float ndcY3 = (y3 / height) - 1f ;
+
+            //6 vertices — position (vec2) + color (vec4)
+            float[] vertices = {
+                ndcX1, ndcY1, r, g, b, 1f,  //vertice1
+                ndcX2, ndcY2, r, g, b, 1f,  //vertice2
+                ndcX3, ndcY3, r, g, b, 1f,  //vertice3
+            };
+
+            //upload to vertex buffer
+            VK.Check(VK.vkMapMemory(device!.Device, vertexBufferMemory, 0, (ulong)(vertices.Length * sizeof(float)), 0, out var mapped), "vkMapMemory");
+
+            fixed (float* pVertices = vertices)
+                Buffer.MemoryCopy(pVertices, (void*)mapped, vertices.Length * sizeof(float), vertices.Length * sizeof(float));
+
+            VK.vkUnmapMemory(device.Device, vertexBufferMemory);
+
+            //wait for previous frame
+            commands!.WaitAndReset();
+
+            //get next swapchain image
+            VK.Check(VK.vkAcquireNextImageKHR(device.Device, swapchain!.Swapchain, ulong.MaxValue, commands.ImageAvailable, IntPtr.Zero, out uint imageIndex), "vkAcquireNextImageKHR");
+
+            //record and submit
+            commands.RecordDraw(imageIndex, vertexBuffer, (uint)(vertices.Length / 6));
+            commands.Submit();
+            commands.Present(imageIndex);
+        }
+
+        public void DrawCircle(float x, float y, float radius, float r, float g, float b)
+        {
+            float ndcX = (x / width) * 2f - 1f;
+            float ndcY = (y / height) * 2f - 1f;
+            float ndcRadiusX = (radius / width) * 2f;
+            float ndcRadiusY = (radius / height) * 2f;
+
+            float left   = ndcX - ndcRadiusX;
+            float right  = ndcX + ndcRadiusX;
+            float top    = ndcY + ndcRadiusY;
+            float bottom = ndcY - ndcRadiusY;
+
+            float[] vertices = {
+                // Triangle 1
+                left,  bottom, r, g, b, 1f,
+                right, bottom, r, g, b, 1f,
+                left,  top,    r, g, b, 1f,
+
+                // Triangle 2
+                left,  top,    r, g, b, 1f,
+                right, bottom, r, g, b, 1f,
+                right, top,    r, g, b, 1f,
+            };
+
+            //upload to vertex buffer
+            VK.Check(VK.vkMapMemory(device!.Device, vertexBufferMemory, 0, (ulong)(vertices.Length * sizeof(float)), 0, out var mapped), "vkMapMemory");
+
+            fixed (float* pVertices = vertices)
+                Buffer.MemoryCopy(pVertices, (void*)mapped, vertices.Length * sizeof(float), vertices.Length * sizeof(float));
+
+            VK.vkUnmapMemory(device.Device, vertexBufferMemory);
+
+            //wait for previous frame
+            commands!.WaitAndReset();
+
+            //get next swapchain image
+            VK.Check(VK.vkAcquireNextImageKHR(device.Device, swapchain!.Swapchain, ulong.MaxValue, commands.ImageAvailable, IntPtr.Zero, out uint imageIndex), "vkAcquireNextImageKHR");
+
+            //record and submit
+            commands.RecordDraw(imageIndex, vertexBuffer, (uint)(vertices.Length / 6), ndcX, ndcY, ndcRadiusX, radius);
+            commands.Submit();
+            commands.Present(imageIndex);
+        }
+
         public void BeginFrame() { }
         public void EndFrame() { }
 

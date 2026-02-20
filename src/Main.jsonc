@@ -1,0 +1,156 @@
+{
+  "namespace": "Main",
+  "functions": [
+    {
+      "name": "main",
+      "params": [{"name": "arguments", "type": "string[]"}],
+      "locals": [
+        {"name": "device",       "type": "*void"},
+        {"name": "commandQueue", "type": "*void"},
+        {"name": "layer",        "type": "*void"},
+        {"name": "window",       "type": "*void"},
+        {"name": "view",         "type": "*void"},
+        {"name": "rectPipeline", "type": "*void"},
+        {"name": "textPipeline", "type": "*void"},
+        {"name": "library",      "type": "*void"},
+        {"name": "nsAppClass",   "type": "*void"},
+        {"name": "nsApp",        "type": "*void"}
+      ],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/System/Library/Frameworks/AppKit.framework/AppKit",
+            "symbol": "NSApplicationLoad",
+            "args": [],
+            "returns": "void"
+          }
+        },
+        {
+          "let": {"name": "device", "value": {
+            "call": {"namespace": "Metal.MetalDevice", "function": "create", "args": {}}
+          }}
+        },
+        {
+          "let": {"name": "commandQueue", "value": {
+            "call": {"namespace": "Metal.MetalDevice", "function": "newCommandQueue",
+              "args": {"device": "device"}}
+          }}
+        },
+        {
+          "let": {"name": "window", "value": {
+            "call": {"namespace": "Metal.AppKit", "function": "createWindow",
+              "args": {"width": 800, "height": 600}}
+          }}
+        },
+        {
+          "let": {"name": "nsAppClass", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
+              "args": {"className": {"string": "NSApplication"}}}
+          }}
+        },
+        {
+          "let": {"name": "nsApp", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
+              "args": {
+                "receiver": "nsAppClass",
+                "selector": {
+                  "call": {"namespace": "Metal.ObjC", "function": "sel",
+                    "args": {"selectorName": {"string": "sharedApplication"}}}
+                }
+              }}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.AppKit", "function": "activate",
+            "args": {"nsApp": "nsApp"}}
+        },
+        {
+          "let": {"name": "view", "value": {
+            "call": {"namespace": "Metal.AppKit", "function": "getContentView",
+              "args": {"window": "window"}}
+          }}
+        },
+        {
+          "let": {"name": "layer", "value": {
+            "call": {"namespace": "Metal.MetalLayer", "function": "create",
+              "args": {"device": "device"}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.AppKit", "function": "attachLayer",
+            "args": {"view": "view", "layer": "layer"}}
+        },
+        {
+          "call": {"namespace": "Metal.AppKit", "function": "runLoopStep", "args": {}}
+        },
+        {
+          "call": {"namespace": "Metal.AppKit", "function": "runLoopStep", "args": {}}
+        },
+        {
+          "call": {"namespace": "Metal.AppKit", "function": "runLoopStep", "args": {}}
+        },
+        {
+          "let": {"name": "library", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "compileShaders",
+              "args": {"device": "device"}}
+          }}
+        },
+        {
+          "let": {"name": "rectPipeline", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "createPipelineState",
+              "args": {"device": "device", "library": "library"}}
+          }}
+        },
+        {
+          "let": {"name": "textPipeline", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "createTextPipelineState",
+              "args": {"device": "device"}}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.MetalRenderer", "function": "drawRectWithPipeline",
+            "args": {
+              "layer":         "layer",
+              "commandQueue":  "commandQueue",
+              "pipelineState": "rectPipeline",
+              "x":             50.0,
+              "y":             50.0,
+              "w":             200.0,
+              "h":             100.0,
+              "r":             0.2,
+              "g":             0.4,
+              "b":             0.8
+            }}
+        },
+        {
+          "call": {"namespace": "Metal.Text", "function": "renderText",
+            "args": {
+              "device":        "device",
+              "commandQueue":  "commandQueue",
+              "pipelineState": "textPipeline",
+              "layer":         "layer",
+              "text":          {"string": "Hello World"},
+              "fontSize":      32.0,
+              "x":             10.0,
+              "y":             10.0,
+              "texWidth":      256,
+              "texHeight":     64
+            }}
+        },
+        {
+          "while": {
+            "condition": {
+              "call": {"namespace": "Metal.AppKit", "function": "isVisible",
+                "args": {"window": "window"}}
+            },
+            "body": [
+              {
+                "call": {"namespace": "Metal.AppKit", "function": "runLoopStep", "args": {}}
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

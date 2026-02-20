@@ -58,15 +58,19 @@ namespace JSONScript.VM.Graphics.Vulkan
             // Validation layers
             var layerPtrs = new IntPtr[ValidationLayers.Length];
             for (int i = 0; i < ValidationLayers.Length; i++)
+            {
                 layerPtrs[i] = Marshal.StringToHGlobalAnsi(ValidationLayers[i]);
+            }
 
             // Extensions
             var extPtrs = new IntPtr[InstanceExtensions.Length];
             for (int i = 0; i < InstanceExtensions.Length; i++)
+            {
                 extPtrs[i] = Marshal.StringToHGlobalAnsi(InstanceExtensions[i]);
+            }
 
             fixed (IntPtr* layerPtr = layerPtrs)
-            fixed (IntPtr* extPtr   = extPtrs)
+            fixed (IntPtr* extPtr = extPtrs)
             {
                 var createInfo = new VkInstanceCreateInfo
                 {
@@ -173,7 +177,9 @@ namespace JSONScript.VM.Graphics.Vulkan
 
             var extPtrs = new IntPtr[DeviceExtensions.Length];
             for (int i = 0; i < DeviceExtensions.Length; i++)
+            {
                 extPtrs[i] = Marshal.StringToHGlobalAnsi(DeviceExtensions[i]);
+            }
 
             fixed (VkDeviceQueueCreateInfo* pQueueInfos = queueInfos)
             fixed (IntPtr* pExtPtrs = extPtrs)

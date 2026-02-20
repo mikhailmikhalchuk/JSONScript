@@ -1,0 +1,262 @@
+{
+  "namespace": "Metal.MetalRenderer",
+  "functions": [
+    {
+      "name": "drawRect",
+      "params": [
+        {"name": "layer",        "type": "*void"},
+        {"name": "commandQueue", "type": "*void"},
+        {"name": "x",            "type": "float"},
+        {"name": "y",            "type": "float"},
+        {"name": "w",            "type": "float"},
+        {"name": "h",            "type": "float"},
+        {"name": "r",            "type": "float"},
+        {"name": "g",            "type": "float"},
+        {"name": "b",            "type": "float"}
+      ],
+      "locals": [
+        {"name": "drawable",      "type": "*void"},
+        {"name": "texture",       "type": "*void"},
+        {"name": "rpd",           "type": "*void"},
+        {"name": "commandBuffer", "type": "*void"},
+        {"name": "encoder",       "type": "*void"}
+      ],
+      "body": [
+        {
+          "let": {"name": "drawable", "value": {
+            "call": {"namespace": "Metal.MetalLayer", "function": "nextDrawable",
+              "args": {"layer": "layer"}}
+          }}
+        },
+        {
+          "let": {"name": "texture", "value": {
+            "call": {"namespace": "Metal.MetalLayer", "function": "getTexture",
+              "args": {"drawable": "drawable"}}
+          }}
+        },
+        {
+          "let": {"name": "rpd", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "createRenderPassDescriptor",
+              "args": {"texture": "texture"}}
+          }}
+        },
+        {
+          "let": {"name": "commandBuffer", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "createCommandBuffer",
+              "args": {"commandQueue": "commandQueue"}}
+          }}
+        },
+        {
+          "let": {"name": "encoder", "value": {
+            "call": {"namespace": "Metal.MetalPipeline", "function": "createEncoder",
+              "args": {
+                "commandBuffer": "commandBuffer",
+                "rpd":           "rpd"
+              }}
+          }}
+        },
+        {
+          "call": {"namespace": "Metal.MetalPipeline", "function": "endEncoding",
+            "args": {"encoder": "encoder"}}
+        },
+        {
+          "call": {"namespace": "Metal.MetalPipeline", "function": "presentDrawable",
+            "args": {
+              "commandBuffer": "commandBuffer",
+              "drawable":      "drawable"
+            }}
+        },
+        {
+          "call": {"namespace": "Metal.MetalPipeline", "function": "commit",
+            "args": {"commandBuffer": "commandBuffer"}}
+        }
+      ]
+    },
+    {
+  "name": "drawRectWithPipeline",
+  "params": [
+    {"name": "layer",         "type": "*void"},
+    {"name": "commandQueue",  "type": "*void"},
+    {"name": "pipelineState", "type": "*void"},
+    {"name": "x",             "type": "float"},
+    {"name": "y",             "type": "float"},
+    {"name": "w",             "type": "float"},
+    {"name": "h",             "type": "float"},
+    {"name": "r",             "type": "float"},
+    {"name": "g",             "type": "float"},
+    {"name": "b",             "type": "float"}
+  ],
+  "locals": [
+    {"name": "drawable",       "type": "*void"},
+    {"name": "texture",        "type": "*void"},
+    {"name": "rpd",            "type": "*void"},
+    {"name": "commandBuffer",  "type": "*void"},
+    {"name": "encoder",        "type": "*void"},
+    {"name": "posBuffer",      "type": "*void"},
+    {"name": "colorBuffer",    "type": "*void"},
+    {"name": "setPipelineSel", "type": "*void"},
+    {"name": "setVertBufSel",  "type": "*void"},
+    {"name": "drawPrimSel",    "type": "*void"},
+    {"name": "ndcX",           "type": "float"},
+    {"name": "ndcY",           "type": "float"},
+    {"name": "ndcW",           "type": "float"},
+    {"name": "ndcH",           "type": "float"}
+  ],
+  "body": [
+    { "let": {"name": "ndcX", "value": {"subtract": [{"divide": ["x", 400.0]}, 1.0]}} },
+    { "let": {"name": "ndcY", "value": {"subtract": [1.0, {"divide": ["y", 300.0]}]}} },
+    { "let": {"name": "ndcW", "value": {"divide": ["w", 400.0]}} },
+    { "let": {"name": "ndcH", "value": {"divide": ["h", 300.0]}} },
+
+    { "alloc": {"size": 48, "into": "posBuffer"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 0,  "value": "ndcX",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 4,  "value": "ndcY",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 8,  "value": {"add": ["ndcX", "ndcW"]},       "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 12, "value": "ndcY",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 16, "value": "ndcX",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 20, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 24, "value": {"add": ["ndcX", "ndcW"]},       "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 28, "value": "ndcY",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 32, "value": {"add": ["ndcX", "ndcW"]},       "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 36, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 40, "value": "ndcX",                          "type": "float32"} },
+    { "memwrite": {"ptr": "posBuffer", "offset": 44, "value": {"subtract": ["ndcY", "ndcH"]}, "type": "float32"} },
+
+    { "alloc": {"size": 96, "into": "colorBuffer"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 0,  "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 4,  "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 8,  "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 12, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 16, "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 20, "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 24, "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 28, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 32, "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 36, "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 40, "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 44, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 48, "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 52, "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 56, "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 60, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 64, "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 68, "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 72, "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 76, "value": 1.0, "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 80, "value": "r", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 84, "value": "g", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 88, "value": "b", "type": "float32"} },
+    { "memwrite": {"ptr": "colorBuffer", "offset": 92, "value": 1.0, "type": "float32"} },
+
+    {
+      "let": {"name": "drawable", "value": {
+        "call": {"namespace": "Metal.MetalLayer", "function": "nextDrawable",
+          "args": {"layer": "layer"}}
+      }}
+    },
+    {
+      "let": {"name": "texture", "value": {
+        "call": {"namespace": "Metal.MetalLayer", "function": "getTexture",
+          "args": {"drawable": "drawable"}}
+      }}
+    },
+    {
+      "let": {"name": "rpd", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createRenderPassDescriptor",
+          "args": {"texture": "texture"}}
+      }}
+    },
+    {
+      "let": {"name": "commandBuffer", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createCommandBuffer",
+          "args": {"commandQueue": "commandQueue"}}
+      }}
+    },
+    {
+      "let": {"name": "encoder", "value": {
+        "call": {"namespace": "Metal.MetalPipeline", "function": "createEncoder",
+          "args": {"commandBuffer": "commandBuffer", "rpd": "rpd"}}
+      }}
+    },
+    {
+      "let": {"name": "setPipelineSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setRenderPipelineState:"}}}
+      }}
+    },
+    {
+      "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
+        "args": {"receiver": "encoder", "selector": "setPipelineSel", "arg0": "pipelineState"}}
+    },
+    {
+      "let": {"name": "setVertBufSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "setVertexBytes:length:atIndex:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",      "type": "*void"},
+          {"value": "setVertBufSel","type": "*void"},
+          {"value": "posBuffer",    "type": "*void"},
+          {"value": 48,             "type": "int"},
+          {"value": 0,              "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",      "type": "*void"},
+          {"value": "setVertBufSel","type": "*void"},
+          {"value": "colorBuffer",  "type": "*void"},
+          {"value": 96,             "type": "int"},
+          {"value": 1,              "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "let": {"name": "drawPrimSel", "value": {
+        "call": {"namespace": "Metal.ObjC", "function": "sel",
+          "args": {"selectorName": {"string": "drawPrimitives:vertexStart:vertexCount:"}}}
+      }}
+    },
+    {
+      "ffi": {
+        "lib": "/usr/lib/libobjc.dylib",
+        "symbol": "objc_msgSend",
+        "args": [
+          {"value": "encoder",    "type": "*void"},
+          {"value": "drawPrimSel","type": "*void"},
+          {"value": 3,            "type": "int"},
+          {"value": 0,            "type": "int"},
+          {"value": 6,            "type": "int"}
+        ],
+        "returns": "void"
+      }
+    },
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "endEncoding",
+        "args": {"encoder": "encoder"}}
+    },
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "presentDrawable",
+        "args": {"commandBuffer": "commandBuffer", "drawable": "drawable"}}
+    },
+    {
+      "call": {"namespace": "Metal.MetalPipeline", "function": "commit",
+        "args": {"commandBuffer": "commandBuffer"}}
+    },
+    { "free": "posBuffer" },
+    { "free": "colorBuffer" }
+  ]
+}
+  ]
+}

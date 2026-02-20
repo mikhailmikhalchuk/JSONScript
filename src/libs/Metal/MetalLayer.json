@@ -1,5 +1,5 @@
 {
-  "namespace": "MetalLayer",
+  "namespace": "Metal.MetalLayer",
   "functions": [
     {
       "name": "create",
@@ -8,33 +8,34 @@
         {"name": "cls",              "type": "*void"},
         {"name": "layer",            "type": "*void"},
         {"name": "setDeviceSel",     "type": "*void"},
-        {"name": "setPixelFmtSel",   "type": "*void"}
+        {"name": "setPixelFmtSel",   "type": "*void"},
+        {"name": "setDrawableSizeSel", "type": "*void"}
       ],
       "type": "*void",
       "body": [
         {
           "let": {"name": "cls", "value": {
-            "call": {"namespace": "ObjC", "function": "getClass",
+            "call": {"namespace": "Metal.ObjC", "function": "getClass",
               "args": {"className": {"string": "CAMetalLayer"}}}
           }}
         },
         {
           "let": {"name": "layer", "value": {
-            "call": {"namespace": "ObjC", "function": "init",
+            "call": {"namespace": "Metal.ObjC", "function": "init",
               "args": {"obj": {
-                "call": {"namespace": "ObjC", "function": "alloc",
+                "call": {"namespace": "Metal.ObjC", "function": "alloc",
                   "args": {"cls": "cls"}}
               }}}
           }}
         },
         {
           "let": {"name": "setDeviceSel", "value": {
-            "call": {"namespace": "ObjC", "function": "sel",
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
               "args": {"selectorName": {"string": "setDevice:"}}}
           }}
         },
         {
-          "call": {"namespace": "ObjC", "function": "msgSend1",
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1",
             "args": {
               "receiver": "layer",
               "selector": "setDeviceSel",
@@ -43,17 +44,36 @@
         },
         {
           "let": {"name": "setPixelFmtSel", "value": {
-            "call": {"namespace": "ObjC", "function": "sel",
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
               "args": {"selectorName": {"string": "setPixelFormat:"}}}
           }}
         },
         {
-          "call": {"namespace": "ObjC", "function": "msgSend1Int",
+          "call": {"namespace": "Metal.ObjC", "function": "msgSend1Int",
             "args": {
               "receiver": "layer",
               "selector": "setPixelFmtSel",
               "arg0":     80
             }}
+        },
+        {
+          "let": {"name": "setDrawableSizeSel", "value": {
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setDrawableSize:"}}}
+          }}
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "layer",             "type": "*void"},
+              {"value": "setDrawableSizeSel","type": "*void"},
+              {"value": 800.0,               "type": "float64"},
+              {"value": 600.0,               "type": "float64"}
+            ],
+            "returns": "void"
+          }
         },
         { "return": "layer" }
       ]
@@ -69,13 +89,13 @@
       "body": [
         {
           "let": {"name": "sel", "value": {
-            "call": {"namespace": "ObjC", "function": "sel",
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
               "args": {"selectorName": {"string": "nextDrawable"}}}
           }}
         },
         {
           "let": {"name": "result", "value": {
-            "call": {"namespace": "ObjC", "function": "msgSend0",
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
               "args": {"receiver": "layer", "selector": "sel"}}
           }}
         },
@@ -93,13 +113,13 @@
       "body": [
         {
           "let": {"name": "sel", "value": {
-            "call": {"namespace": "ObjC", "function": "sel",
+            "call": {"namespace": "Metal.ObjC", "function": "sel",
               "args": {"selectorName": {"string": "texture"}}}
           }}
         },
         {
           "let": {"name": "result", "value": {
-            "call": {"namespace": "ObjC", "function": "msgSend0",
+            "call": {"namespace": "Metal.ObjC", "function": "msgSend0",
               "args": {"receiver": "drawable", "selector": "sel"}}
           }}
         },
