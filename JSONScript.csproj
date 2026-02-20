@@ -9,6 +9,18 @@
     <AssemblyName>jsonscript</AssemblyName>
     <RootNamespace>JSONScript</RootNamespace>
     <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="src\VM\Graphics\Vulkan\Shaders\vert.spv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <TargetPath>Shaders\vert.spv</TargetPath>
+    </None>
+    <None Update="src\VM\Graphics\Vulkan\Shaders\frag.spv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <TargetPath>Shaders\frag.spv</TargetPath>
+    </None>
+</ItemGroup>
 
 </Project>

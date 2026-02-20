@@ -7,7 +7,8 @@ namespace JSONScript.Runtime
         STRING,
         BOOL,
         ARRAY,
-        NULL
+        NULL,
+        POINTER = 8,
     }
 
     public class Value
@@ -20,11 +21,46 @@ namespace JSONScript.Runtime
         public List<Value>? ArrayValue;
         public JSType? ElementType; // the type of elements in the array
 
-        public Value(long i)   { Type = JSType.INT;    IntValue = i; }
-        public Value(double f) { Type = JSType.FLOAT;  FloatValue = f; }
-        public Value(string s) { Type = JSType.STRING; StringValue = s; }
-        public Value(bool b)   { Type = JSType.BOOL;   BoolValue = b; }
-        public Value()         { Type = JSType.NULL; }
+        public nint PointerValue;
+        public string? PointeeTypeName; // e.g. "MTLDevice", "int", "void"
+
+        public Value(long i)
+        {
+            Type = JSType.INT;
+            IntValue = i;
+        }
+
+        public Value(double f)
+        {
+            Type = JSType.FLOAT;
+            FloatValue = f;
+        }
+
+        public Value(string s)
+        {
+            Type = JSType.STRING;
+            StringValue = s;
+        }
+
+        public Value(bool b)
+        {
+            Type = JSType.BOOL;
+            BoolValue = b;
+        }
+
+        public Value()
+        {
+            Type = JSType.NULL;
+        }
+
+        public Value(nint ptr, string pointeeType)
+        {
+            Type = JSType.POINTER;
+            PointerValue = ptr;
+            PointeeTypeName = pointeeType;
+        }
+
+        public static Value NullPointer(string pointeeType) => new Value(0, pointeeType);
 
         public Value(List<Value> arr, JSType elementType)
         {
@@ -39,7 +75,7 @@ namespace JSONScript.Runtime
             {
                 return Type switch
                 {
-                    JSType.INT   => IntValue,
+                    JSType.INT => IntValue,
                     JSType.FLOAT => (long)FloatValue,
                     _ => throw new InvalidOperationException($"Cannot convert {Type} to int")
                 };
@@ -52,25 +88,22 @@ namespace JSONScript.Runtime
             {
                 return Type switch
                 {
-                    JSType.INT   => IntValue,
+                    JSType.INT => IntValue,
                     JSType.FLOAT => FloatValue,
                     _ => throw new InvalidOperationException($"Cannot convert {Type} to double")
                 };
             }
         }
 
-        public override string ToString()
+        public override string ToString() => Type switch
         {
-            return Type switch
-            {
-                JSType.INT    => IntValue.ToString(),
-                JSType.FLOAT  => FloatValue.ToString(),
-                JSType.STRING => StringValue ?? "",
-                JSType.BOOL   => BoolValue.ToString(),
-                JSType.ARRAY  => $"[{string.Join(", ", ArrayValue!.Select(v => v.ToString()))}]",
-                JSType.NULL   => "null",
-                _             => "null"
-            };
-        }
+            JSType.INT => IntValue.ToString(),
+            JSType.FLOAT => FloatValue.ToString(),
+            JSType.STRING => StringValue ?? "",
+            JSType.BOOL => BoolValue.ToString(),
+            JSType.POINTER => $"*{PointeeTypeName}(0x{PointerValue:X})",
+            JSType.NULL => "null",
+            _ => "unknown"
+        };
     }
 }

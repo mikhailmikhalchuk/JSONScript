@@ -4,12 +4,11 @@ namespace JSONScript.Compiler
     {
         public string FullName { get; }   // e.g. "Math.Add"
         public byte[] Bytecode { get; }
-        public JSONScript.Runtime.Value[] Constants { get; }
+        public Runtime.Value[] Constants { get; }
         public int LocalCount { get; }
         public int ParamCount { get; }
 
-        public CompiledFunction(string fullName, byte[] bytecode, 
-            JSONScript.Runtime.Value[] constants, int localCount, int paramCount)
+        public CompiledFunction(string fullName, byte[] bytecode, Runtime.Value[] constants, int localCount, int paramCount)
         {
             FullName = fullName;
             Bytecode = bytecode;

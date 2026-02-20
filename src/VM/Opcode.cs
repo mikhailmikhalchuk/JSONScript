@@ -27,7 +27,14 @@ namespace JSONScript.VM
         ARRAY_GET   = 0x16, // gets element at index
         ARRAY_SET   = 0x17, // sets element at index
         ARRAY_PUSH  = 0x18, // appends value to array
-        ARRAY_LEN   = 0x19, // pushes array length onto stack
+        ARRAY_LEN   = 0x19, // pushes array length onto stack,
+        NOT = 0x1A,       // logical NOT
+        ON_EVENT = 0x1B,
+        FFI_CALL = 0x1C,
+        MEM_ALLOC  = 0x1D,
+        MEM_WRITE  = 0x1E,
+        MEM_READ   = 0x1F,
+        MEM_FREE   = 0x20,
         HALT = 0xFF
     }
 }

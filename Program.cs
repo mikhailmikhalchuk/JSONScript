@@ -1,9 +1,13 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using JSONScript.VM;
 using JSONScript.Runtime;
 using JSONScript.Compiler;
+using JSONScript.VM.Graphics;
+using JSONScript.VM.Graphics.Metal;
+using JSONScript.VM.Graphics.Vulkan;
 
 namespace JSONScript
 {
@@ -26,6 +30,14 @@ namespace JSONScript
             string command = args[0];
             string path = args[1];
             Debug = Array.Exists(args, a => a == "--debug");
+            bool graphics = Array.Exists(args, a => a == "--graphics");
+
+            string device = "metal";
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--gldevice:"))
+                    device = arg.Split(':')[1].ToLower();
+            }
 
             string entryPoint = "Main.main";
             int entryIdx = Array.IndexOf(args, "--entry");
@@ -38,15 +50,34 @@ namespace JSONScript
                 case "run":
                 {
                     var table = CompilePath(path);
-                    if (Debug)
+
+                    string[] scriptArgs = args.SkipWhile(a => a != "--").Skip(1).ToArray();
+                    var vm = new VM.VM(table, entryPoint, scriptArgs);
+
+                    if (graphics)
                     {
-                        foreach (var fn in table.Values)
+                        IGraphicsBackend backend = device switch
                         {
-                            Console.WriteLine($"[{fn.FullName}] Bytecode: {string.Join(", ", fn.Bytecode)}");
+                            "metal" => new MetalBackend(),
+                            "vulkan" => new VulkanBackend(),
+                            _ => throw new Exception($"Unknown graphics device '{device}'")
+                        };
+                        backend.Init(800, 600, "JSONScript");
+                        vm.SetGraphicsBackend(backend);  //must be before run
+                    }
+
+                    vm.Run();
+
+                    if (graphics)
+                    {
+                        var gfxBackend = vm.GetGraphicsBackend();
+                        if (gfxBackend != null)
+                        {
+                            gfxBackend.SetEventHandler((eventName, args) => vm.FireEvent(eventName, args));
+                            gfxBackend.RunLoop();
                         }
                     }
-                    var vm = new VM.VM(table, entryPoint);
-                    vm.Run();
+
                     break;
                 }
 
@@ -62,8 +93,26 @@ namespace JSONScript
                 case "exec":
                 {
                     var table = BuildOutput.LoadTable(path);
-                    var vm = new VM.VM(table, entryPoint);
+                    string[] scriptArgs = args.SkipWhile(a => a != "--").Skip(1).ToArray();
+                    var vm = new VM.VM(table, entryPoint, scriptArgs);
+
+                    if (graphics)
+                    {
+                        IGraphicsBackend backend = device switch
+                        {
+                            "metal"  => new MetalBackend(),
+                            "vulkan" => new VulkanBackend(),
+                            _ => throw new Exception($"Unknown graphics device '{device}'")
+                        };
+                        backend.Init(800, 600, "JSONScript");
+                        vm.SetGraphicsBackend(backend);
+                    }
+
                     vm.Run();
+
+                    if (graphics)
+                        vm.GetGraphicsBackend()?.RunLoop();
+
                     break;
                 }
 
@@ -78,16 +127,15 @@ namespace JSONScript
             var compiler = new Compiler.Compiler();
             var files = Directory.Exists(path) ? Directory.GetFiles(path, "*.json", SearchOption.AllDirectories).ToList() : new List<string> { path };
 
-            // First pass - register all signatures
+            compiler.RegisterNativeNamespaces();
+
             foreach (var file in files)
             {
                 compiler.RegisterFile(file);
             }
 
-            // Stop here if any files were malformed
             compiler.FlushDiagnostics();
 
-            // Second pass - compile all bodies
             foreach (var file in files)
             {
                 compiler.CompileFile(file);

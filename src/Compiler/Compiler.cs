@@ -16,6 +16,9 @@ namespace JSONScript.Compiler
         private HashSet<string> assignedLocals = new();
         private List<Value> constants = new();
         private List<Opcode> bytecode = new();
+
+        // Track which names are params
+        private HashSet<string> paramNames = new();
         private string currentNamespace = "";
         private string pathToFileComp = "";
         private Dictionary<string, int> elementLineNumbers = new();
@@ -23,15 +26,16 @@ namespace JSONScript.Compiler
 
         private JSType? currentReturnType = null;
 
-        private static readonly HashSet<string> ReservedWords = new()
-        {
+        private static readonly HashSet<string> ReservedWords =
+        [
             "let", "return", "print", "if", "else", "then", "while",
             "call", "push", "set", "get", "and", "or", "eq", "gt", "lt",
             "add", "subtract", "multiply", "divide", "length", "string",
             "name", "true", "false", "null", "namespace", "function",
             "params", "locals", "body", "args", "at", "value", "type",
             "condition", "array"
-        };
+        ];
+
         private DiagnosticBag diagnostics = new();
 
         public Dictionary<string, CompiledFunction> FunctionTable => functionTable;
@@ -44,11 +48,14 @@ namespace JSONScript.Compiler
             public JSType Type;
             public JSType? ElementType;
 
-            public LocalInfo(int index, JSType type, JSType? elementType = null)
+            public string? PointeeType;
+
+            public LocalInfo(int index, JSType type, JSType? elementType = null, string? pointeeType = null)
             {
                 Index = index;
                 Type = type;
                 ElementType = elementType;
+                PointeeType = pointeeType;
             }
         }
 
@@ -108,6 +115,7 @@ namespace JSONScript.Compiler
             bytecode = new();
             elementLineNumbers = new();
             currentReturnType = null;
+            paramNames = new();
         }
 
         private void TrackLineNumbers(string jsonText)
@@ -165,8 +173,10 @@ namespace JSONScript.Compiler
                     case JsonTokenType.EndObject:
                     case JsonTokenType.EndArray:
                         arrayIndexStack.Pop();
+
                         if (pathStack.Count > 0)
                             pathStack.Pop();
+                            
                         break;
 
                     default:
@@ -233,7 +243,6 @@ namespace JSONScript.Compiler
                     return;
                 }
 
-                bool hasValidArgs = false;
                 if (func.TryGetProperty("params", out var mainParams))
                 {
                     var paramList = mainParams.EnumerateArray().ToList();
@@ -252,11 +261,6 @@ namespace JSONScript.Compiler
                             return;
                         }
                     }
-                    
-                }
-
-                if (!hasValidArgs)
-                {
                     
                 }
             }
@@ -284,9 +288,10 @@ namespace JSONScript.Compiler
                     paramIndex++;
 
                     string typeStr = param.TryGetProperty("type", out var t) ? t.GetString() ?? "int" : "int";
-                    var (baseType, elementType) = ParseType(typeStr);
-                    locals[paramName] = new LocalInfo(locals.Count, baseType, elementType);
+                    var (baseType, elementType, pointeeType) = ParseType(typeStr);
+                    locals[paramName] = new LocalInfo(locals.Count, baseType, elementType, pointeeType);
                     assignedLocals.Add(paramName);
+                    paramNames.Add(paramName);
                     paramCount++;
                 }
             }
@@ -297,16 +302,24 @@ namespace JSONScript.Compiler
                 foreach (var loc in localsEl.EnumerateArray())
                 {
                     string name = loc.GetProperty("name").GetString()!;
+                    string currentPath = path + ".locals[" + localsIndex + "].name";
+                    localsIndex++;
+
                     if (ReservedWords.Contains(name))
                     {
-                        diagnostics.Report(pathToFileComp, $"'{name}' is a reserved keyword and cannot be used as a variable name at line {GetLineNumber(path + ".locals[" + localsIndex + "].name")}");
-                        localsIndex++;
+                        diagnostics.Report(pathToFileComp, $"'{name}' is a reserved keyword and cannot be used as a variable name at line {GetLineNumber(currentPath)}");
                         continue;
                     }
+
+                    if (locals.ContainsKey(name))
+                    {
+                        diagnostics.Report(pathToFileComp, $"'{name}' is already declared as a parameter and cannot be redeclared as a local at line {GetLineNumber(currentPath)}");
+                        continue;
+                    }
+
                     string typeStr = loc.GetProperty("type").GetString() ?? "int";
-                    var (baseType, elementType) = ParseType(typeStr);
-                    if (!locals.ContainsKey(name))
-                        locals[name] = new LocalInfo(locals.Count, baseType, elementType);
+                    var (baseType, elementType, pointeeType) = ParseType(typeStr);
+                    locals[name] = new LocalInfo(locals.Count, baseType, elementType, pointeeType);
                 }
             }
 
@@ -320,7 +333,7 @@ namespace JSONScript.Compiler
             if (func.TryGetProperty("type", out var retTypeProp))
             {
                 string retTypeStr = retTypeProp.GetString()!;
-                var (baseType, _) = ParseType(retTypeStr);
+                var (baseType, _, _) = ParseType(retTypeStr);
                 currentReturnType = baseType;
             }
 
@@ -333,9 +346,7 @@ namespace JSONScript.Compiler
 
             bytecode.Add(Opcode.HALT);
 
-            functionTable[fullName] = new CompiledFunction(
-                fullName, bytecode.Select(o => (byte)o).ToArray(), constants.ToArray(),
-                locals.Count, paramCount);
+            functionTable[fullName] = new CompiledFunction(fullName, bytecode.Select(o => (byte)o).ToArray(), constants.ToArray(), locals.Count, paramCount);
         }
 
         private void CompileStatement(JsonElement stmt, string path)
@@ -354,6 +365,12 @@ namespace JSONScript.Compiler
 
                 string name = letStmt.GetProperty("name").GetString()!;
 
+                if (paramNames.Contains(name))
+                {
+                    diagnostics.Report(pathToFileComp, $"'{name}' is a parameter and cannot be reassigned at line {GetLineNumber(path + ".let.name")}");
+                    return;
+                }
+
                 if (!locals.TryGetValue(name, out var localInfo))
                 {
                     diagnostics.Report(pathToFileComp, $"Undefined variable '{name}' at line {GetLineNumber(path + ".let.name")}");
@@ -366,11 +383,22 @@ namespace JSONScript.Compiler
                     return;
                 }
 
+                if (valueExpr.ValueKind == JsonValueKind.Null && localInfo.Type == JSType.POINTER)
+                {
+                    int ci = AddConstant(new Value(0, localInfo.PointeeType ?? "void"));
+                    Emit3(Opcode.PUSH_CONST, ci);
+                    bytecode.Add(Opcode.STORE_LOCAL);
+                    bytecode.Add((Opcode)(byte)localInfo.Index);
+                    bytecode.Add((Opcode)(byte)(localInfo.Index >> 8));
+                    assignedLocals.Add(name);
+                    return; // skip the normal CompileExpression path
+                }
+
                 // Type check for non-array types
                 if (localInfo.Type != JSType.ARRAY)
                 {
                     JSType? inferredType = InferType(valueExpr);
-                    if (inferredType.HasValue && !TypesCompatible(localInfo.Type, inferredType.Value))
+                    if (inferredType.HasValue && !TypesCompatible(localInfo.Type, inferredType.Value, localInfo.PointeeType, null))
                     {
                         int line = GetLineNumber(path + ".let.name");
                         diagnostics.Report(pathToFileComp, $"Type mismatch: '{name}' is declared as '{localInfo.Type}' but assigned '{inferredType.Value}' at line {line}");
@@ -396,9 +424,13 @@ namespace JSONScript.Compiler
                 CompileExpression(valueExpr, path + ".let.value");
 
                 if (localInfo.Type == JSType.INT)
+                {
                     bytecode.Add(Opcode.STORE_LOCAL_INT);
+                }
                 else
+                {
                     bytecode.Add(Opcode.STORE_LOCAL);
+                }
 
                 bytecode.Add((Opcode)(byte)localInfo.Index);
                 bytecode.Add((Opcode)(byte)(localInfo.Index >> 8));
@@ -576,12 +608,201 @@ namespace JSONScript.Compiler
                 JSType? inferredType = InferType(retExpr);
                 if (inferredType.HasValue && !TypesCompatible(currentReturnType.Value, inferredType.Value))
                 {
-                    diagnostics.Report(pathToFileComp, $"Return type mismatch: function returns '{currentReturnType}' but got '{inferredType.Value}' at line {GetLineNumber(path + ".return")}");
+                    diagnostics.Report(pathToFileComp, $"Expected type '{currentReturnType}' but got '{inferredType.Value}' at line {GetLineNumber(path + ".return")}");
                     return;
                 }
 
                 CompileExpression(retExpr, path + ".return");
                 bytecode.Add(Opcode.RET);
+            }
+            else if (stmt.TryGetProperty("on", out var onStmt))
+            {
+                foreach (var prop in onStmt.EnumerateObject())
+                {
+                    if (prop.Name != "event" && prop.Name != "call")
+                    {
+                        diagnostics.Report(pathToFileComp, $"Unknown field '{prop.Name}' in on statement at line {GetLineNumber(path + ".on." + prop.Name)}");
+                        return;
+                    }
+                }
+
+                if (!onStmt.TryGetProperty("event", out var eventProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'on' is missing 'event' at line {GetLineNumber(path + ".on")}");
+                    return;
+                }
+
+                if (!onStmt.TryGetProperty("call", out var callProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'on' is missing 'call' at line {GetLineNumber(path + ".on")}");
+                    return;
+                }
+
+                if (!callProp.TryGetProperty("namespace", out var nsProp) ||
+                    !callProp.TryGetProperty("function", out var fnProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'on.call' requires 'namespace' and 'function' at line {GetLineNumber(path + ".on.call")}");
+                    return;
+                }
+
+                string eventName = eventProp.GetString()!;
+                string fullName  = $"{nsProp.GetString()}.{fnProp.GetString()}";
+
+                // Push event name and function name as constants
+                int eventIndex = AddConstant(new Value(eventName));
+                int funcIndex  = AddConstant(new Value(fullName));
+                Emit3(Opcode.PUSH_CONST, eventIndex);
+                Emit3(Opcode.PUSH_CONST, funcIndex);
+                bytecode.Add(Opcode.ON_EVENT);
+            }
+            else if (stmt.TryGetProperty("ffi", out var ffiStmt))
+            {
+                foreach (var prop in ffiStmt.EnumerateObject())
+                {
+                    if (prop.Name != "lib" && prop.Name != "symbol" && prop.Name != "args" && prop.Name != "returns" && prop.Name != "into")
+                    {
+                        diagnostics.Report(pathToFileComp, $"Unknown field '{prop.Name}' in ffi at line {GetLineNumber(path + ".ffi." + prop.Name)}");
+                        return;
+                    }
+                }
+
+                if (!ffiStmt.TryGetProperty("lib", out var libProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'ffi' is missing 'lib' at line {GetLineNumber(path + ".ffi")}");
+                    return;
+                }
+
+                if (!ffiStmt.TryGetProperty("symbol", out var symbolProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'ffi' is missing 'symbol' at line {GetLineNumber(path + ".ffi")}");
+                    return;
+                }
+
+                string lib    = libProp.GetString()!;
+                string symbol = symbolProp.GetString()!;
+
+                // Collect args
+                int argCount = 0;
+                if (ffiStmt.TryGetProperty("args", out var ffiArgs))
+                {
+                    foreach (var arg in ffiArgs.EnumerateArray())
+                    {
+                        if (!arg.TryGetProperty("value", out var argVal) || !arg.TryGetProperty("type", out var argTypeProp))
+                        {
+                            diagnostics.Report(pathToFileComp, $"ffi arg must have 'value' and 'type' at line {GetLineNumber(path + ".ffi.args")}");
+                            return;
+                        }
+
+                        // Push type string as constant
+                        int typeIdx = AddConstant(new Value(argTypeProp.GetString()!));
+                        Emit3(Opcode.PUSH_CONST, typeIdx);
+
+                        // Push value
+                        CompileExpression(argVal, path + $".ffi.args[{argCount}].value");
+                        argCount++;
+                    }
+                }
+
+                // Push return type
+                string returnType = ffiStmt.TryGetProperty("returns", out var retProp) ? retProp.GetString()! : "void";
+                int retTypeIdx = AddConstant(new Value(returnType));
+                Emit3(Opcode.PUSH_CONST, retTypeIdx);
+
+                // Push lib and symbol
+                int libIdx = AddConstant(new Value(lib));
+                int symbolIdx = AddConstant(new Value(symbol));
+                Emit3(Opcode.PUSH_CONST, libIdx);
+                Emit3(Opcode.PUSH_CONST, symbolIdx);
+
+                bytecode.Add(Opcode.FFI_CALL);
+                bytecode.Add((Opcode)(byte)argCount);
+
+                // Store result if "into" is specified
+                if (ffiStmt.TryGetProperty("into", out var intoProp))
+                {
+                    string intoName = intoProp.GetString()!;
+                    if (!locals.TryGetValue(intoName, out var intoInfo))
+                    {
+                        diagnostics.Report(pathToFileComp, $"Undefined variable '{intoName}' at line {GetLineNumber(path + ".ffi.into")}");
+                        return;
+                    }
+                    bytecode.Add(Opcode.STORE_LOCAL);
+                    bytecode.Add((Opcode)(byte)intoInfo.Index);
+                    bytecode.Add((Opcode)(byte)(intoInfo.Index >> 8));
+                    assignedLocals.Add(intoName);
+                }
+            }
+            else if (stmt.TryGetProperty("alloc", out var allocStmt))
+            {
+                if (!allocStmt.TryGetProperty("size", out var sizeProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'alloc' missing 'size' at line {GetLineNumber(path + ".alloc")}");
+                    return;
+                }
+                if (!allocStmt.TryGetProperty("into", out var intoProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'alloc' missing 'into' at line {GetLineNumber(path + ".alloc")}");
+                    return;
+                }
+
+                string intoName = intoProp.GetString()!;
+                if (!locals.TryGetValue(intoName, out var intoInfo))
+                {
+                    diagnostics.Report(pathToFileComp, $"Undefined variable '{intoName}' at line {GetLineNumber(path + ".alloc.into")}");
+                    return;
+                }
+
+                CompileExpression(sizeProp, path + ".alloc.size");
+                bytecode.Add(Opcode.MEM_ALLOC);
+                bytecode.Add(Opcode.STORE_LOCAL);
+                bytecode.Add((Opcode)(byte)intoInfo.Index);
+                bytecode.Add((Opcode)(byte)(intoInfo.Index >> 8));
+                assignedLocals.Add(intoName);
+            }
+            else if (stmt.TryGetProperty("memwrite", out var memWriteStmt))
+            {
+                if (!memWriteStmt.TryGetProperty("ptr", out var ptrProp) || !memWriteStmt.TryGetProperty("offset", out var offsetProp) || !memWriteStmt.TryGetProperty("value", out var valueProp) || !memWriteStmt.TryGetProperty("type", out var typeProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'memwrite' requires 'ptr', 'offset', 'value', 'type' at line {GetLineNumber(path + ".memwrite")}");
+                    return;
+                }
+
+                CompileExpression(ptrProp,    path + ".memwrite.ptr");
+                CompileExpression(offsetProp, path + ".memwrite.offset");
+                CompileExpression(valueProp,  path + ".memwrite.value");
+                int typeIdx = AddConstant(new Value(typeProp.GetString()!));
+                Emit3(Opcode.PUSH_CONST, typeIdx);
+                bytecode.Add(Opcode.MEM_WRITE);
+            }
+            else if (stmt.TryGetProperty("memread", out var memReadStmt))
+            {
+                if (!memReadStmt.TryGetProperty("ptr", out var ptrProp) || !memReadStmt.TryGetProperty("offset", out var offsetProp) || !memReadStmt.TryGetProperty("type", out var typeProp) || !memReadStmt.TryGetProperty("into", out var intoProp))
+                {
+                    diagnostics.Report(pathToFileComp, $"'memread' requires 'ptr', 'offset', 'type', 'into' at line {GetLineNumber(path + ".memread")}");
+                    return;
+                }
+
+                string intoName = intoProp.GetString()!;
+                if (!locals.TryGetValue(intoName, out var intoInfo))
+                {
+                    diagnostics.Report(pathToFileComp, $"Undefined variable '{intoName}' at line {GetLineNumber(path + ".memread.into")}");
+                    return;
+                }
+
+                CompileExpression(ptrProp,    path + ".memread.ptr");
+                CompileExpression(offsetProp, path + ".memread.offset");
+                int typeIdx = AddConstant(new Value(typeProp.GetString()!));
+                Emit3(Opcode.PUSH_CONST, typeIdx);
+                bytecode.Add(Opcode.MEM_READ);
+                bytecode.Add(Opcode.STORE_LOCAL);
+                bytecode.Add((Opcode)(byte)intoInfo.Index);
+                bytecode.Add((Opcode)(byte)(intoInfo.Index >> 8));
+                assignedLocals.Add(intoName);
+            }
+            else if (stmt.TryGetProperty("free", out var freeStmt))
+            {
+                CompileExpression(freeStmt, path + ".free");
+                bytecode.Add(Opcode.MEM_FREE);
             }
             else
             {
@@ -593,8 +814,7 @@ namespace JSONScript.Compiler
 
         private void CompileCall(JsonElement callExpr, string path, bool expectsValue = false)
         {
-            if (!callExpr.TryGetProperty("namespace", out var nsProp) ||
-                !callExpr.TryGetProperty("function", out var funcProp))
+            if (!callExpr.TryGetProperty("namespace", out var nsProp) || !callExpr.TryGetProperty("function", out var funcProp))
             {
                 int line = GetLineNumber(path);
                 diagnostics.Report(pathToFileComp, $"Malformed call at line {line}, missing 'namespace' and/or 'function'");
@@ -675,11 +895,17 @@ namespace JSONScript.Compiler
                 case JsonValueKind.Number:
                 {
                     if (expr.TryGetInt32(out int intVal))
-                        Emit3(Opcode.PUSH_CONST, AddConstant(new Value((long)intVal)));
+                    {
+                        Emit3(Opcode.PUSH_CONST, AddConstant(new Value(intVal)));
+                    }
                     else if (expr.TryGetDouble(out double dbl))
+                    {
                         Emit3(Opcode.PUSH_CONST, AddConstant(new Value(dbl)));
+                    }
                     else
+                    {
                         diagnostics.Report(pathToFileComp, $"Unsupported numeric value at line {GetLineNumber(path)}");
+                    }
                     break;
                 }
 
@@ -719,6 +945,10 @@ namespace JSONScript.Compiler
                     break;
                 }
 
+                case JsonValueKind.Null:
+                    Emit3(Opcode.PUSH_CONST, AddConstant(new Value(0, "void")));
+                    break;
+
                 case JsonValueKind.Object:
                 {
                     if (expr.TryGetProperty("string", out var strProp))
@@ -747,20 +977,37 @@ namespace JSONScript.Compiler
                         break;
                     }
 
+                    if (expr.TryGetProperty("not", out var notExpr))
+                    {
+                        CompileExpression(notExpr, path + ".not");
+                        bytecode.Add(Opcode.NOT);
+                        break;
+                    }
+
                     if (expr.TryGetProperty("length", out var lenExpr))
                     {
-                        string arrName = lenExpr.GetString()!;
-                        if (!locals.TryGetValue(arrName, out var arrInfo))
+                        if (lenExpr.ValueKind == JsonValueKind.String)
                         {
-                            diagnostics.Report(pathToFileComp, $"Undefined variable '{arrName}' at line {GetLineNumber(path + ".length")}");
-                            break;
+                            // bare variable name
+                            string varName = lenExpr.GetString()!;
+                            if (!locals.TryGetValue(varName, out var varInfo))
+                            {
+                                diagnostics.Report(pathToFileComp, $"Undefined variable '{varName}' at line {GetLineNumber(path + ".length")}");
+                                break;
+                            }
+                            if (varInfo.Type != JSType.ARRAY && varInfo.Type != JSType.STRING)
+                            {
+                                diagnostics.Report(pathToFileComp, $"'{varName}' is of type '{varInfo.Type}' and does not have a length at line {GetLineNumber(path + ".length")}");
+                                break;
+                            }
+                            Emit3(Opcode.LOAD_LOCAL, varInfo.Index);
                         }
-                        if (arrInfo.Type != JSType.ARRAY)
+                        else
                         {
-                            diagnostics.Report(pathToFileComp, $"'{arrName}' is of type '{arrInfo.Type}' and does not have a length at line {GetLineNumber(path + ".length")}");
-                            break;
+                            // expression that produces a string or array
+                            CompileExpression(lenExpr, path + ".length");
                         }
-                        Emit3(Opcode.LOAD_LOCAL, arrInfo.Index);
+
                         bytecode.Add(Opcode.ARRAY_LEN);
                         break;
                     }
@@ -797,13 +1044,27 @@ namespace JSONScript.Compiler
                         Opcode opCode;
                         switch (opName)
                         {
-                            case "add":      opCode = Opcode.ADD; break;
-                            case "subtract": opCode = Opcode.SUB; break;
-                            case "multiply": opCode = Opcode.MUL; break;
-                            case "divide":   opCode = Opcode.DIV; break;
-                            case "eq":       opCode = Opcode.EQ;  break;
-                            case "gt":       opCode = Opcode.GT;  break;
-                            case "lt":       opCode = Opcode.LT;  break;
+                            case "add":
+                                opCode = Opcode.ADD;
+                                break;
+                            case "subtract":
+                                opCode = Opcode.SUB;
+                                break;
+                            case "multiply":
+                                opCode = Opcode.MUL;
+                                break;
+                            case "divide":
+                                opCode = Opcode.DIV;
+                                break;
+                            case "eq":
+                                opCode = Opcode.EQ;
+                                break;
+                            case "gt":
+                                opCode = Opcode.GT;
+                                break;
+                            case "lt":
+                                opCode = Opcode.LT;
+                                break;
                             default:
                                 diagnostics.Report(pathToFileComp, $"Unknown operation '{opName}' at line {GetLineNumber(path + "." + opName)}");
                                 continue;
@@ -866,7 +1127,9 @@ namespace JSONScript.Compiler
 
             int stmtIndex = 0;
             foreach (var stmt in then.EnumerateArray())
+            {
                 CompileStatement(stmt, path + $".then[{stmtIndex++}]");
+            }
 
             bool hasElse = ifExpr.TryGetProperty("else", out var elseBranch);
             int elseJumpIndex = -1;
@@ -879,17 +1142,19 @@ namespace JSONScript.Compiler
             }
 
             int afterThen = bytecode.Count;
-            bytecode[falseJumpIndex]     = (Opcode)(byte)(afterThen & 0xFF);
+            bytecode[falseJumpIndex] = (Opcode)(byte)(afterThen & 0xFF);
             bytecode[falseJumpIndex + 1] = (Opcode)(byte)((afterThen >> 8) & 0xFF);
 
             if (hasElse)
             {
                 stmtIndex = 0;
                 foreach (var stmt in elseBranch.EnumerateArray())
+                {
                     CompileStatement(stmt, path + $".else[{stmtIndex++}]");
+                }
 
                 int afterElse = bytecode.Count;
-                bytecode[elseJumpIndex]     = (Opcode)(byte)(afterElse & 0xFF);
+                bytecode[elseJumpIndex] = (Opcode)(byte)(afterElse & 0xFF);
                 bytecode[elseJumpIndex + 1] = (Opcode)(byte)((afterElse >> 8) & 0xFF);
             }
         }
@@ -918,14 +1183,16 @@ namespace JSONScript.Compiler
 
             int stmtIndex = 0;
             foreach (var stmt in body.EnumerateArray())
+            {
                 CompileStatement(stmt, path + $".body[{stmtIndex++}]");
+            }
 
             bytecode.Add(Opcode.JMP);
             bytecode.Add((Opcode)(byte)(loopStart & 0xFF));
             bytecode.Add((Opcode)(byte)(loopStart >> 8));
 
             int loopEnd = bytecode.Count;
-            bytecode[exitJumpIndex]     = (Opcode)(byte)(loopEnd & 0xFF);
+            bytecode[exitJumpIndex] = (Opcode)(byte)(loopEnd & 0xFF);
             bytecode[exitJumpIndex + 1] = (Opcode)(byte)((loopEnd >> 8) & 0xFF);
         }
 
@@ -988,7 +1255,7 @@ namespace JSONScript.Compiler
 
                     if (signatureTable.ContainsKey(fullName))
                     {
-                        diagnostics.Report(Path.GetFullPath(path), $"Duplicate function '{fullName}' - already defined in another file");
+                        diagnostics.Report(Path.GetFullPath(path), $"Duplicate function '{fullName}' already defined in another file");
                         continue;
                     }
 
@@ -1005,8 +1272,8 @@ namespace JSONScript.Compiler
                                     JsonValueKind.Number when defaultVal.TryGetInt64(out long l) => new Value(l),
                                     JsonValueKind.Number => new Value(defaultVal.GetDouble()),
                                     JsonValueKind.String => new Value(defaultVal.GetString()!),
-                                    JsonValueKind.True   => new Value(true),
-                                    JsonValueKind.False  => new Value(false),
+                                    JsonValueKind.True => new Value(true),
+                                    JsonValueKind.False => new Value(false),
                                     _ => new Value()
                                 };
                                 paramList.Add(new FunctionParam(paramName, true, defaultValue));
@@ -1022,13 +1289,31 @@ namespace JSONScript.Compiler
                     if (func.TryGetProperty("type", out var retTypeProp))
                     {
                         string retTypeStr = retTypeProp.GetString() ?? "";
-                        var (baseType, _) = ParseType(retTypeStr);
+                        var (baseType, _, _) = ParseType(retTypeStr);
                         returnType = baseType;
                     }
 
                     signatureTable[fullName] = new FunctionSignature(fullName, paramList, returnType);
                 }
             }
+        }
+
+        public void RegisterNativeNamespaces()
+        {
+            // Gfx.DrawRect(x, y, w, h, r, g, b)
+            signatureTable["Gfx.DrawRect"] = new FunctionSignature("Gfx.DrawRect", new List<FunctionParam>
+            {
+                new FunctionParam("x"),
+                new FunctionParam("y"),
+                new FunctionParam("w"),
+                new FunctionParam("h"),
+                new FunctionParam("r"),
+                new FunctionParam("g"),
+                new FunctionParam("b"),
+            }, null);
+
+            signatureTable["Gfx.GetLayer"]  = new FunctionSignature("Gfx.GetLayer",  new List<FunctionParam>(), JSType.POINTER);
+            signatureTable["Gfx.GetDevice"] = new FunctionSignature("Gfx.GetDevice", new List<FunctionParam>(), JSType.POINTER);
         }
 
         private void Emit3(Opcode op, int index)
@@ -1038,19 +1323,26 @@ namespace JSONScript.Compiler
             bytecode.Add((Opcode)((index >> 8) & 0xFF));
         }
 
-        private static (JSType baseType, JSType? elementType) ParseType(string type)
+        private (JSType type, JSType? elementType, string? pointeeType) ParseType(string typeStr)
         {
-            return type switch
+            // Pointer type — recursive
+            if (typeStr.StartsWith("*"))
             {
-                "int" => (JSType.INT, null),
-                "float" => (JSType.FLOAT, null),
-                "string" => (JSType.STRING, null),
-                "bool" => (JSType.BOOL, null),
-                "int[]" => (JSType.ARRAY, JSType.INT),
-                "float[]" => (JSType.ARRAY, JSType.FLOAT),
-                "string[]" => (JSType.ARRAY, JSType.STRING),
-                "bool[]" => (JSType.ARRAY, JSType.BOOL),
-                _ => throw new Exception($"Unknown type '{type}'")
+                string inner = typeStr.Substring(1);
+                return (JSType.POINTER, null, inner);
+            }
+
+            return typeStr switch
+            {
+                "int" => (JSType.INT, null, null),
+                "float" => (JSType.FLOAT, null, null),
+                "string" => (JSType.STRING, null, null),
+                "bool" => (JSType.BOOL, null, null),
+                "int[]" => (JSType.ARRAY, JSType.INT, null),
+                "float[]" => (JSType.ARRAY, JSType.FLOAT, null),
+                "string[]" => (JSType.ARRAY, JSType.STRING, null),
+                "bool[]" => (JSType.ARRAY, JSType.BOOL, null),
+                _ => throw new Exception($"Unknown type '{typeStr}'")
             };
         }
 
@@ -1068,37 +1360,70 @@ namespace JSONScript.Compiler
             };
         }
 
-        private static JSType? InferTypeFromObject(JsonElement expr)
+        private JSType? InferTypeFromObject(JsonElement expr)
         {
             if (expr.TryGetProperty("string", out _))
                 return JSType.STRING;
 
+            if (expr.TryGetProperty("cast", out _))
+                return JSType.POINTER;
+
             if (expr.TryGetProperty("get", out _))
-                return null; // depends on array element type
+                return null;
+
+            if (expr.TryGetProperty("not", out _))
+                return JSType.BOOL;
 
             if (expr.TryGetProperty("length", out _))
                 return JSType.INT;
 
             if (expr.TryGetProperty("add", out _) || expr.TryGetProperty("subtract", out _) || expr.TryGetProperty("multiply", out _) || expr.TryGetProperty("divide", out _))
                 return JSType.FLOAT;
-            
+
             if (expr.TryGetProperty("eq", out _) || expr.TryGetProperty("gt", out _) || expr.TryGetProperty("lt", out _) || expr.TryGetProperty("and", out _) || expr.TryGetProperty("or", out _))
                 return JSType.BOOL;
 
-            if (expr.TryGetProperty("call", out _))
+            if (expr.TryGetProperty("call", out var callEl))
+            {
+                if (callEl.TryGetProperty("namespace", out var ns) && callEl.TryGetProperty("function", out var fn))
+                {
+                    string fullName = $"{ns.GetString()}.{fn.GetString()}";
+                    if (signatureTable.TryGetValue(fullName, out var sig) && sig.ReturnType.HasValue)
+                        return sig.ReturnType.Value;
+                }
                 return null;
+            }
+
+            // String variable reference resolves to its declared type
+            if (expr.ValueKind == JsonValueKind.String)
+            {
+                string varName = expr.GetString()!;
+                if (locals.TryGetValue(varName, out var info))
+                    return info.Type;
+            }
 
             return null;
         }
 
-        private static bool TypesCompatible(JSType declared, JSType assigned)
+        private static bool TypesCompatible(JSType declared, JSType assigned, string? declaredPointee = null, string? assignedPointee = null)
         {
             if (declared == assigned)
-                return true;
+            {
+                // Both pointers — check pointee types
+                if (declared == JSType.POINTER)
+                {
+                    if (declaredPointee == "void" || assignedPointee == "void")
+                        return true;
 
+                    return declaredPointee == assignedPointee;
+                }
+                return true;
+            }
+
+            // int/float interop
             if ((declared == JSType.INT || declared == JSType.FLOAT) && (assigned == JSType.INT || assigned == JSType.FLOAT))
                 return true;
-                
+
             return false;
         }
 

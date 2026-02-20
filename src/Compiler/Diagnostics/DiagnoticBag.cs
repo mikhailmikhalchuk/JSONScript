@@ -15,5 +15,13 @@ namespace JSONScript.Compiler.Diagnostics
                 Console.Error.WriteLine($"{file}: {message}");
             }
         }
+
+        public static void PrintDebugMessage(string message)
+        {
+            if (Program.Debug)
+            {
+                Console.WriteLine(message);
+            }
+        }
     }
 }

@@ -1,0 +1,47 @@
+{
+  "namespace": "MetalDevice",
+  "functions": [
+    {
+      "name": "create",
+      "params": [],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/System/Library/Frameworks/Metal.framework/Metal",
+            "symbol": "MTLCreateSystemDefaultDevice",
+            "args": [],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "newCommandQueue",
+      "params": [{"name": "device", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "newCommandQueue"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {"receiver": "device", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    }
+  ]
+}

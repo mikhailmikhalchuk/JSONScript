@@ -1,0 +1,225 @@
+{
+  "namespace": "MetalPipeline",
+  "functions": [
+    {
+      "name": "createRenderPassDescriptor",
+      "params": [{"name": "texture", "type": "*void"}],
+      "locals": [
+        {"name": "rpdClass",       "type": "*void"},
+        {"name": "rpd",            "type": "*void"},
+        {"name": "colorAttsSel",   "type": "*void"},
+        {"name": "colorAtts",      "type": "*void"},
+        {"name": "atIndexSel",     "type": "*void"},
+        {"name": "colorAtt",       "type": "*void"},
+        {"name": "setTextureSel",  "type": "*void"},
+        {"name": "setLoadActSel",  "type": "*void"},
+        {"name": "setStoreActSel", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "rpdClass", "value": {
+            "call": {"namespace": "ObjC", "function": "getClass",
+              "args": {"className": {"string": "MTLRenderPassDescriptor"}}}
+          }}
+        },
+        {
+          "let": {"name": "rpd", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {
+                "receiver": "rpdClass",
+                "selector": {
+                  "call": {"namespace": "ObjC", "function": "sel",
+                    "args": {"selectorName": {"string": "renderPassDescriptor"}}}
+                }
+              }}
+          }}
+        },
+        {
+          "let": {"name": "colorAttsSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "colorAttachments"}}}
+          }}
+        },
+        {
+          "let": {"name": "colorAtts", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {"receiver": "rpd", "selector": "colorAttsSel"}}
+          }}
+        },
+        {
+          "let": {"name": "atIndexSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "objectAtIndexedSubscript:"}}}
+          }}
+        },
+        {
+        "let": {"name": "colorAtt", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend1IntRet",
+            "args": {
+                "receiver": "colorAtts",
+                "selector": "atIndexSel",
+                "arg0":     0
+            }}
+        }}
+        },
+        {
+          "let": {"name": "setTextureSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setTexture:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setTextureSel",
+              "arg0":     "texture"
+            }}
+        },
+        {
+          "let": {"name": "setLoadActSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setLoadAction:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1Int",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setLoadActSel",
+              "arg0":     2
+            }}
+        },
+        {
+          "let": {"name": "setStoreActSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setStoreAction:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1Int",
+            "args": {
+              "receiver": "colorAtt",
+              "selector": "setStoreActSel",
+              "arg0":     1
+            }}
+        },
+        { "return": "rpd" }
+      ]
+    },
+    {
+      "name": "createCommandBuffer",
+      "params": [{"name": "commandQueue", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "commandBuffer"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {"receiver": "commandQueue", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "createEncoder",
+      "params": [
+        {"name": "commandBuffer", "type": "*void"},
+        {"name": "rpd",           "type": "*void"}
+      ],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "renderCommandEncoderWithDescriptor:"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend1",
+              "args": {
+                "receiver": "commandBuffer",
+                "selector": "sel",
+                "arg0":     "rpd"
+              }}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "endEncoding",
+      "params": [{"name": "encoder", "type": "*void"}],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "endEncoding"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend0",
+            "args": {"receiver": "encoder", "selector": "sel"}}
+        }
+      ]
+    },
+    {
+      "name": "presentDrawable",
+      "params": [
+        {"name": "commandBuffer", "type": "*void"},
+        {"name": "drawable",      "type": "*void"}
+      ],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "presentDrawable:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "commandBuffer",
+              "selector": "sel",
+              "arg0":     "drawable"
+            }}
+        }
+      ]
+    },
+    {
+      "name": "commit",
+      "params": [{"name": "commandBuffer", "type": "*void"}],
+      "locals": [{"name": "sel", "type": "*void"}],
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "commit"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend0",
+            "args": {"receiver": "commandBuffer", "selector": "sel"}}
+        }
+      ]
+    }
+  ]
+}

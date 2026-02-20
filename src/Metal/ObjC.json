@@ -1,0 +1,339 @@
+{
+  "namespace": "ObjC",
+  "functions": [
+    {
+      "name": "getClass",
+      "params": [{"name": "className", "type": "string"}],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_getClass",
+            "args": [{"value": "className", "type": "string"}],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "sel",
+      "params": [{"name": "selectorName", "type": "string"}],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "sel_registerName",
+            "args": [{"value": "selectorName", "type": "string"}],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "msgSend0",
+      "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"}
+      ],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "receiver", "type": "*void"},
+              {"value": "selector", "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "msgSend1",
+      "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"},
+        {"name": "arg0",     "type": "*void"}
+      ],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "receiver", "type": "*void"},
+              {"value": "selector", "type": "*void"},
+              {"value": "arg0",     "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "msgSend1Int",
+      "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"},
+        {"name": "arg0",     "type": "int"}
+      ],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "receiver", "type": "*void"},
+              {"value": "selector", "type": "*void"},
+              {"value": "arg0",     "type": "int"}
+            ],
+            "returns": "void"
+          }
+        }
+      ]
+    },
+    {
+      "name": "msgSend1Bool",
+      "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"},
+        {"name": "arg0",     "type": "bool"}
+      ],
+      "locals": [],
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "receiver", "type": "*void"},
+              {"value": "selector", "type": "*void"},
+              {"value": "arg0",     "type": "bool"}
+            ],
+            "returns": "void"
+          }
+        }
+      ]
+    },
+    {
+      "name": "msgSend2",
+      "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"},
+        {"name": "arg0",     "type": "*void"},
+        {"name": "arg1",     "type": "*void"}
+      ],
+      "locals": [{"name": "result", "type": "*void"}],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "receiver", "type": "*void"},
+              {"value": "selector", "type": "*void"},
+              {"value": "arg0",     "type": "*void"},
+              {"value": "arg1",     "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "alloc",
+      "params": [{"name": "cls", "type": "*void"}],
+      "locals": [
+        {"name": "allocSelector", "type": "*void"},
+        {"name": "result",        "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "sel_registerName",
+            "args": [{"value": {"string": "alloc"}, "type": "string"}],
+            "returns": "*void",
+            "into": "allocSelector"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "cls",           "type": "*void"},
+              {"value": "allocSelector", "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "init",
+      "params": [{"name": "obj", "type": "*void"}],
+      "locals": [
+        {"name": "initSelector", "type": "*void"},
+        {"name": "result",       "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "sel_registerName",
+            "args": [{"value": {"string": "init"}, "type": "string"}],
+            "returns": "*void",
+            "into": "initSelector"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "obj",          "type": "*void"},
+              {"value": "initSelector", "type": "*void"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+    "name": "msgSend1IntRet",
+    "params": [
+        {"name": "receiver", "type": "*void"},
+        {"name": "selector", "type": "*void"},
+        {"name": "arg0",     "type": "int"}
+    ],
+    "locals": [{"name": "result", "type": "*void"}],
+    "type": "*void",
+    "body": [
+        {
+        "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+            {"value": "receiver", "type": "*void"},
+            {"value": "selector", "type": "*void"},
+            {"value": "arg0",     "type": "int"}
+            ],
+            "returns": "*void",
+            "into": "result"
+        }
+        },
+        { "return": "result" }
+    ]
+    },
+    {
+        "name": "msgSendRect",
+        "params": [
+            {"name": "receiver", "type": "*void"},
+            {"name": "selector", "type": "*void"},
+            {"name": "x",        "type": "float"},
+            {"name": "y",        "type": "float"},
+            {"name": "w",        "type": "float"},
+            {"name": "h",        "type": "float"},
+            {"name": "styleMask","type": "int"},
+            {"name": "backing",  "type": "int"},
+            {"name": "defer",    "type": "bool"}
+        ],
+        "locals": [{"name": "result", "type": "*void"}],
+        "type": "*void",
+        "body": [
+            {
+            "ffi": {
+                "lib": "/usr/lib/libobjc.dylib",
+                "symbol": "objc_msgSend",
+                "args": [
+                {"value": "receiver",  "type": "*void"},
+                {"value": "selector",  "type": "*void"},
+                {"value": "x",         "type": "float64"},
+                {"value": "y",         "type": "float64"},
+                {"value": "w",         "type": "float64"},
+                {"value": "h",         "type": "float64"},
+                {"value": "styleMask", "type": "int"},
+                {"value": "backing",   "type": "int"},
+                {"value": "defer",     "type": "bool"}
+                ],
+                "returns": "*void",
+                "into": "result"
+            }
+            },
+            { "return": "result" }
+        ]
+        },
+    {
+      "name": "nsString",
+      "params": [{"name": "str", "type": "string"}],
+      "locals": [
+        {"name": "nsStringClass",  "type": "*void"},
+        {"name": "stringWithUTF8", "type": "*void"},
+        {"name": "result",         "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_getClass",
+            "args": [{"value": {"string": "NSString"}, "type": "string"}],
+            "returns": "*void",
+            "into": "nsStringClass"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "sel_registerName",
+            "args": [{"value": {"string": "stringWithUTF8String:"}, "type": "string"}],
+            "returns": "*void",
+            "into": "stringWithUTF8"
+          }
+        },
+        {
+          "ffi": {
+            "lib": "/usr/lib/libobjc.dylib",
+            "symbol": "objc_msgSend",
+            "args": [
+              {"value": "nsStringClass",  "type": "*void"},
+              {"value": "stringWithUTF8", "type": "*void"},
+              {"value": "str",            "type": "string"}
+            ],
+            "returns": "*void",
+            "into": "result"
+          }
+        },
+        { "return": "result" }
+      ]
+    }
+  ]
+}

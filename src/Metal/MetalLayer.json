@@ -1,0 +1,110 @@
+{
+  "namespace": "MetalLayer",
+  "functions": [
+    {
+      "name": "create",
+      "params": [{"name": "device", "type": "*void"}],
+      "locals": [
+        {"name": "cls",              "type": "*void"},
+        {"name": "layer",            "type": "*void"},
+        {"name": "setDeviceSel",     "type": "*void"},
+        {"name": "setPixelFmtSel",   "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "cls", "value": {
+            "call": {"namespace": "ObjC", "function": "getClass",
+              "args": {"className": {"string": "CAMetalLayer"}}}
+          }}
+        },
+        {
+          "let": {"name": "layer", "value": {
+            "call": {"namespace": "ObjC", "function": "init",
+              "args": {"obj": {
+                "call": {"namespace": "ObjC", "function": "alloc",
+                  "args": {"cls": "cls"}}
+              }}}
+          }}
+        },
+        {
+          "let": {"name": "setDeviceSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setDevice:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1",
+            "args": {
+              "receiver": "layer",
+              "selector": "setDeviceSel",
+              "arg0":     "device"
+            }}
+        },
+        {
+          "let": {"name": "setPixelFmtSel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "setPixelFormat:"}}}
+          }}
+        },
+        {
+          "call": {"namespace": "ObjC", "function": "msgSend1Int",
+            "args": {
+              "receiver": "layer",
+              "selector": "setPixelFmtSel",
+              "arg0":     80
+            }}
+        },
+        { "return": "layer" }
+      ]
+    },
+    {
+      "name": "nextDrawable",
+      "params": [{"name": "layer", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "nextDrawable"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {"receiver": "layer", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    },
+    {
+      "name": "getTexture",
+      "params": [{"name": "drawable", "type": "*void"}],
+      "locals": [
+        {"name": "sel",    "type": "*void"},
+        {"name": "result", "type": "*void"}
+      ],
+      "type": "*void",
+      "body": [
+        {
+          "let": {"name": "sel", "value": {
+            "call": {"namespace": "ObjC", "function": "sel",
+              "args": {"selectorName": {"string": "texture"}}}
+          }}
+        },
+        {
+          "let": {"name": "result", "value": {
+            "call": {"namespace": "ObjC", "function": "msgSend0",
+              "args": {"receiver": "drawable", "selector": "sel"}}
+          }}
+        },
+        { "return": "result" }
+      ]
+    }
+  ]
+}
